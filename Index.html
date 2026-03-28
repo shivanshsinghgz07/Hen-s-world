@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Hen's World — Global Room Messenger</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0c0f;
+            font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .app {
+            max-width: 800px;
+            width: 100%;
+            height: 90vh;
+            background: #111417;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #2a2f36;
+        }
+
+        .header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #1e2329;
+            background: #0e1115;
+        }
+
+        .badge {
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            color: #6c7a89;
+            text-transform: uppercase;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        h1 {
+            font-size: 1.7rem;
+            font-weight: 500;
+            color: #eef2ff;
+            letter-spacing: -0.5px;
+        }
+
+        .sub {
+            color: #6c86a3;
+            font-size: 0.8rem;
+            margin-top: 6px;
+        }
+
+        .room-controls {
+            padding: 1rem 1.5rem;
+            background: #0b0e12;
+            border-bottom: 1px solid #1a1f26;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .room-input-group {
+            flex: 3;
+            min-width: 180px;
+        }
+
+        .room-label {
+            font-size: 0.7rem;
+            color: #7e8c9e;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .room-field {
+            display: flex;
+            background: #050709;
+            border: 1px solid #252b33;
+            border-radius: 40px;
+            overflow: hidden;
+            transition: 0.2s;
+        }
+        .room-field:focus-within {
+            border-color: #3e6b9e;
+            box-shadow: 0 0 0 1px #1e3a5f;
+        }
+
+        .room-field input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 10px 16px;
+            color: #dfe6f0;
+            font-family: monospace;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .room-field button {
+            background: #1e293b;
+            border: none;
+            border-left: 1px solid #2d3540;
+            padding: 0 20px;
+            color: #b9d0f0;
+            font-weight: bold;
+            font-family: monospace;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.8rem;
+        }
+        .room-field button:hover {
+            background: #2d3e5a;
+            color: white;
+        }
+
+        .room-status {
+            flex: 2;
+            text-align: right;
+            font-size: 0.85rem;
+            background: #07090e;
+            padding: 8px 16px;
+            border-radius: 40px;
+            border: 1px solid #20262e;
+        }
+
+        .room-name-badge {
+            color: #93c5fd;
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .connection-status {
+            font-size: 0.7rem;
+            margin-top: 4px;
+            color: #5f7d9c;
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #0f1219;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+            animation: fadeSlide 0.2s ease;
+        }
+
+        .message-header {
+            font-size: 0.7rem;
+            color: #5f7f9e;
+            margin-bottom: 4px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .message-sender {
+            font-weight: 600;
+            color: #8db5e5;
+        }
+
+        .message-time {
+            font-size: 0.65rem;
+            color: #4a5b72;
+        }
+
+        .message-text {
+            background: #181e26;
+            padding: 8px 14px;
+            border-radius: 18px;
+            border-top-left-radius: 4px;
+            display: inline-block;
+            max-width: 85%;
+            word-wrap: break-word;
+            color: #eef3ff;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            border: 1px solid #282f39;
+        }
+
+        .own-message {
+            align-items: flex-end;
+        }
+        .own-message .message-text {
+            background: #1e2a3a;
+            border-color: #2f4b6e;
+            border-top-right-radius: 4px;
+            border-top-left-radius: 18px;
+        }
+        .own-message .message-header {
+            justify-content: flex-end;
+        }
+
+        .input-area {
+            padding: 1rem 1.5rem 1.3rem;
+            background: #0b0e12;
+            border-top: 1px solid #1a1f26;
+        }
+
+        .message-form {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .message-input-wrapper {
+            flex: 1;
+            background: #05070c;
+            border: 1px solid #252b33;
+            border-radius: 28px;
+            padding: 6px 16px;
+            transition: 0.2s;
+        }
+        .message-input-wrapper:focus-within {
+            border-color: #3e6b9e;
+        }
+
+        #messageInput {
+            width: 100%;
+            background: transparent;
+            border: none;
+            padding: 10px 0;
+            color: #edf4ff;
+            font-family: monospace;
+            font-size: 0.9rem;
+            outline: none;
+            resize: none;
+        }
+
+        #sendBtn {
+            background: #1f2a3c;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 24px;
+            color: #c0dcff;
+            font-weight: bold;
+            font-family: monospace;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.8rem;
+            border: 1px solid #2f3a48;
+        }
+        #sendBtn:hover {
+            background: #2e405b;
+            color: white;
+        }
+
+        @keyframes fadeSlide {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .messages-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .messages-container::-webkit-scrollbar-track {
+            background: #0a0d12;
+        }
+        .messages-container::-webkit-scrollbar-thumb {
+            background: #2e3a48;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 550px) {
+            .app {
+                height: 95vh;
+                border-radius: 20px;
+            }
+            .room-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .room-status {
+                text-align: center;
+            }
+            .message-text {
+                max-width: 95%;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6c7a89;
+        }
+        
+        .system-message .message-text {
+            background: #1a1f2a;
+            color: #a0b4d0;
+            font-style: italic;
+            border-color: #2d3543;
+            font-size: 0.8rem;
+        }
+        
+        .system-message .message-sender {
+            color: #8aa2c2;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <div class="header">
+        <div class="badge">🐔 global messenger · hen's world</div>
+        <h1>Hen's World Chat</h1>
+        <div class="sub">real-time · room-based · worldwide</div>
+    </div>
+
+    <div class="room-controls">
+        <div class="room-input-group">
+            <div class="room-label">🔗 room identifier</div>
+            <div class="room-field">
+                <input type="text" id="roomInput" placeholder="e.g., coop-chat, hens-den, global-lounge" autocomplete="off">
+                <button id="joinRoomBtn">join</button>
+            </div>
+        </div>
+        <div class="room-status">
+            🌀 ROOM // <span id="currentRoomName" class="room-name-badge">—</span>
+            <div class="connection-status" id="connectionStatus">connecting...</div>
+        </div>
+    </div>
+
+    <div class="messages-container" id="messagesContainer">
+        <div class="loading">✨ Welcome to Hen's World! Join a room to start chatting...</div>
+    </div>
+
+    <div class="input-area">
+        <div class="message-form">
+            <div class="message-input-wrapper">
+                <textarea id="messageInput" rows="1" placeholder="type message... (enter to send)" disabled></textarea>
+            </div>
+            <button id="sendBtn" disabled>send ➤</button>
+        </div>
+    </div>
+</div>
+
+<!-- Firebase SDK with your actual configuration -->
+<script type="module">
+    // Import Firebase modules (v10.8.0)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, push, onChildAdded, query, limitToLast, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    
+    // ==================== YOUR FIREBASE CONFIGURATION ====================
+    // This is from your project "Hen's-world" - fully integrated
+    const firebaseConfig = {
+        apiKey: "AIzaSyDb0fuG5RUoTtNUuJ10n_A4NCC2GFDaOps",
+        authDomain: "hen-s-world.firebaseapp.com",
+        projectId: "hen-s-world",
+        storageBucket: "hen-s-world.firebasestorage.app",
+        messagingSenderId: "359865594843",
+        appId: "1:359865594843:web:3da81e9f7c00bba183adfe"
+    };
+    // ====================================================================
+    
+    // Global references
+    let app;
+    let database;
+    let messagesRef = null;
+    let currentRoom = null;
+    let username = null;
+    let isFirebaseReady = false;
+    
+    // Generate or retrieve username from localStorage
+    function initUser() {
+        let stored = localStorage.getItem("hensworld_username");
+        if(stored) {
+            username = stored;
+        } else {
+            // Fun Hen-themed usernames for personality
+            let prefixes = ["henny", "clucky", "eggbert", "feathers", "peckish", "roosty", "henrietta", "golden", "sunny", "nestor"];
+            let suffixes = ["flyer", "cluck", "wings", "egg", "hen", "rooster", "hatcher", "coop", "nugget", "flock"];
+            let randPre = prefixes[Math.floor(Math.random() * prefixes.length)];
+            let randSuf = suffixes[Math.floor(Math.random() * suffixes.length)];
+            let num = Math.floor(Math.random() * 900 + 100);
+            username = randPre + "_" + randSuf + num;
+            localStorage.setItem("hensworld_username", username);
+        }
+        return username;
+    }
+    
+    // Initialize Firebase connection using your config
+    async function initFirebase() {
+        try {
+            app = initializeApp(firebaseConfig);
+            database = getDatabase(app);
+            isFirebaseReady = true;
+            
+            const statusEl = document.getElementById("connectionStatus");
+            statusEl.innerHTML = "✅ Firebase connected · realtime ready";
+            statusEl.style.color = "#10b981";
+            
+            // Optional: Test connection by writing a tiny test flag (silent)
+            console.log("🔥 Hen's World Firebase initialized successfully");
+            return true;
+        } catch (error) {
+            console.error("Firebase init error:", error);
+            const statusEl = document.getElementById("connectionStatus");
+            statusEl.innerHTML = "❌ Firebase connection failed. Check console.";
+            statusEl.style.color = "#f87171";
+            isFirebaseReady = false;
+            return false;
+        }
+    }
+    
+    // Join a specific room
+    function joinRoom(roomId) {
+        if (!database || !isFirebaseReady) {
+            alert("Firebase not ready yet. Please wait or refresh the page.");
+            return false;
+        }
+        
+        // Clean room ID (no special path issues)
+        const cleanRoomId = roomId.trim().replace(/[.#$[\]]/g, '_');
+        if (!cleanRoomId) return false;
+        
+        if (currentRoom === cleanRoomId) {
+            // Already in this room
+            return true;
+        }
+        
+        // Leave old room listeners by nullifying reference (onChildAdded will be detached)
+        if (messagesRef) {
+            messagesRef = null;
+        }
+        
+        currentRoom = cleanRoomId;
+        document.getElementById("currentRoomName").innerText = currentRoom;
+        
+        // Enable message input
+        const msgInput = document.getElementById("messageInput");
+        const sendBtn = document.getElementById("sendBtn");
+        msgInput.disabled = false;
+        sendBtn.disabled = false;
+        msgInput.focus();
+        
+        // Clear messages container and show loading
+        const container = document.getElementById("messagesContainer");
+        container.innerHTML = '<div class="loading">🐔 joining the coop... loading messages</div>';
+        
+        // Build reference to messages in this room
+        messagesRef = ref(database, `rooms/${currentRoom}/messages`);
+        const messagesQuery = query(messagesRef, limitToLast(100));
+        
+        // Listen for new/old messages
+        onChildAdded(messagesQuery, (snapshot) => {
+            const message = snapshot.val();
+            if (message) {
+                displayMessage(message);
+            }
+        });
+        
+        // Add system join message after a short delay (avoid race)
+        setTimeout(() => {
+            if (currentRoom === cleanRoomId) {
+                addSystemMessage(`${username} 🐔 joined the coop`);
+            }
+        }, 300);
+        
+        return true;
+    }
+    
+    // Send a text message to current room
+    async function sendMessage(text) {
+        if (!text.trim()) return false;
+        if (!currentRoom) {
+            alert("Join a room first!");
+            return false;
+        }
+        if (!database || !isFirebaseReady) {
+            alert("Waiting for Firebase connection...");
+            return false;
+        }
+        
+        const messageData = {
+            sender: username,
+            text: text.trim(),
+            timestamp: serverTimestamp(),
+            timestampMs: Date.now(),
+            type: "user"
+        };
+        
+        try {
+            await push(ref(database, `rooms/${currentRoom}/messages`), messageData);
+            // Clear input after successful send
+            document.getElementById("messageInput").value = "";
+            return true;
+        } catch (error) {
+            console.error("Send error:", error);
+            alert("Failed to send message. Check network/Firebase rules.");
+            return false;
+        }
+    }
+    
+    // Add system notification (like join/leave events)
+    async function addSystemMessage(text) {
+        if (!currentRoom || !database || !isFirebaseReady) return;
+        
+        const systemMsg = {
+            sender: "🐔 Hen's World",
+            text: text,
+            timestamp: serverTimestamp(),
+            timestampMs: Date.now(),
+            isSystem: true,
+            type: "system"
+        };
+        
+        try {
+            await push(ref(database, `rooms/${currentRoom}/messages`), systemMsg);
+        } catch (error) {
+            console.warn("System message not sent:", error);
+        }
+    }
+    
+    // Escape HTML to prevent injection
+    function escapeHtml(str) {
+        if (!str) return "";
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+    
+    // Display message in chat container
+    function displayMessage(message) {
+        const container = document.getElementById("messagesContainer");
+        if (!container) return;
+        
+        // Remove placeholder loading if exists
+        if (container.children.length === 1 && container.children[0].classList?.contains('loading')) {
+            container.innerHTML = '';
+        }
+        
+        const msgDiv = document.createElement("div");
+        const isOwn = (message.sender === username);
+        const isSystem = message.isSystem === true || message.type === "system" || message.sender === "🐔 Hen's World";
+        
+        if (isSystem) {
+            msgDiv.className = "message system-message";
+        } else {
+            msgDiv.className = `message ${isOwn ? 'own-message' : ''}`;
+        }
+        
+        let timeStr = "now";
+        if (message.timestampMs) {
+            const date = new Date(message.timestampMs);
+            timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+        } else if (message.timestamp && typeof message.timestamp === 'object') {
+            // fallback for serverTimestamp placeholder
+            timeStr = "just now";
+        }
+        
+        const senderDisplay = isSystem ? "🐔 system" : escapeHtml(message.sender);
+        
+        msgDiv.innerHTML = `
+            <div class="message-header">
+                <span class="message-sender">${senderDisplay}</span>
+                <span class="message-time">${timeStr}</span>
+            </div>
+            <div class="message-text">${escapeHtml(message.text)}</div>
+        `;
+        
+        container.appendChild(msgDiv);
+        container.scrollTop = container.scrollHeight;
+    }
+    
+    // Setup UI interactions
+    function setupUI() {
+        const roomInput = document.getElementById("roomInput");
+        const joinBtn = document.getElementById("joinRoomBtn");
+        const sendBtn = document.getElementById("sendBtn");
+        const messageInput = document.getElementById("messageInput");
+        
+        joinBtn.addEventListener("click", () => {
+            let roomVal = roomInput.value.trim();
+            if (!roomVal) {
+                roomVal = "henhouse-lounge";
+                roomInput.value = roomVal;
+            }
+            joinRoom(roomVal);
+        });
+        
+        sendBtn.addEventListener("click", () => {
+            sendMessage(messageInput.value);
+        });
+        
+        messageInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage(messageInput.value);
+            }
+        });
+        
+        // Set default room hint
+        roomInput.value = "henhouse-lounge";
+        
+        // Optional: Auto-join default room after Firebase is ready
+        const tryAutoJoin = () => {
+            if (isFirebaseReady && !currentRoom) {
+                joinRoom("henhouse-lounge");
+            }
+        };
+        setTimeout(tryAutoJoin, 800);
+    }
+    
+    // Helper to update status with username
+    function updateStatusWithUser() {
+        const statusDiv = document.getElementById("connectionStatus");
+        if (statusDiv) {
+            let connText = isFirebaseReady ? "✅ live" : "⏳ connecting...";
+            statusDiv.innerHTML = `👤 ${escapeHtml(username)} · ${connText}`;
+        }
+    }
+    
+    // Initialization sequence
+    async function init() {
+        initUser();
+        await initFirebase();
+        setupUI();
+        updateStatusWithUser();
+        
+        // If Firebase failed, show detailed instructions
+        if (!isFirebaseReady) {
+            const container = document.getElementById("messagesContainer");
+            container.innerHTML = `
+                <div class="loading" style="background: #1f1a2e; border-left: 4px solid #f97316; padding: 20px; border-radius: 16px; margin: 10px;">
+                    <strong>🐔 Welcome to Hen's World!</strong><br><br>
+                    ⚠️ Firebase connection issue. Please verify your project settings:<br><br>
+                    • Make sure Realtime Database is enabled in Firebase Console.<br>
+                    • Set database rules to <code style="background:#000;padding:2px 6px;">{ "rules": { ".read": true, ".write": true } }</code> for development.<br>
+                    • Check that your API key and project ID are correct.<br><br>
+                    🔧 Your config is loaded from "Hen's-world" project. If error persists, go to Firebase Console → Realtime Database → Create Database in test mode.<br><br>
+                    <span style="color:#fbbf24;">✨ Once database is ready, refresh the page and join a room!</span>
+                </div>
+            `;
+            const msgInput = document.getElementById("messageInput");
+            const sendBtn = document.getElementById("sendBtn");
+            if (msgInput) msgInput.disabled = true;
+            if (sendBtn) sendBtn.disabled = true;
+        } else {
+            // small welcoming system message after a short delay if joined room
+            const checkRoomAuto = setInterval(() => {
+                if (currentRoom && isFirebaseReady) {
+                    // add gentle welcome only once
+                    if (!window._welcomeSent) {
+                        window._welcomeSent = true;
+                        setTimeout(() => {
+                            addSystemMessage(`✨ Welcome to room "${currentRoom}". Say hello to the flock!`);
+                        }, 500);
+                    }
+                    clearInterval(checkRoomAuto);
+                }
+            }, 500);
+        }
+    }
+    
+    // Start the app
+    init();
+</script>
+</body>
+  </html>
