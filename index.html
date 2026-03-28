@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hen's World — Global Room Messenger</title>
+    <title>Hen's World — Secure Global Chat</title>
     <style>
         * {
             margin: 0;
@@ -336,7 +336,7 @@
             color: #8aa2c2;
         }
 
-        /* Username Modal Styles */
+        /* Auth Modal Styles */
         .modal {
             position: fixed;
             top: 0;
@@ -355,7 +355,7 @@
             background: #111417;
             border-radius: 24px;
             padding: 30px;
-            max-width: 350px;
+            max-width: 380px;
             width: 90%;
             border: 1px solid #2a2f36;
             box-shadow: 0 20px 40px rgba(0,0,0,0.5);
@@ -373,7 +373,7 @@
             font-size: 0.85rem;
         }
         
-        .username-input {
+        .auth-input {
             width: 100%;
             background: #050709;
             border: 1px solid #252b33;
@@ -386,23 +386,24 @@
             outline: none;
         }
         
-        .username-input:focus {
+        .auth-input:focus {
             border-color: #3e6b9e;
         }
         
-        .username-error {
+        .auth-error {
             color: #ff8888;
             font-size: 0.75rem;
             margin-bottom: 15px;
             display: none;
         }
         
-        .modal-buttons {
+        .auth-buttons {
             display: flex;
             gap: 12px;
+            margin-bottom: 15px;
         }
         
-        .modal-btn {
+        .auth-btn {
             flex: 1;
             padding: 10px;
             border-radius: 40px;
@@ -413,31 +414,34 @@
             transition: 0.2s;
         }
         
-        .modal-btn-primary {
+        .auth-btn-primary {
             background: #1e293b;
             color: #b9d0f0;
             border: 1px solid #2f3a48;
         }
         
-        .modal-btn-primary:hover {
+        .auth-btn-primary:hover {
             background: #2e405b;
             color: white;
         }
         
-        .modal-btn-secondary {
+        .auth-btn-secondary {
             background: #2d1f1f;
             color: #ffaaaa;
             border: 1px solid #8b3a3a;
         }
         
-        .username-taken {
-            animation: shake 0.3s;
+        .auth-switch {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #6c86a3;
+            cursor: pointer;
+            margin-top: 10px;
         }
         
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+        .auth-switch span {
+            color: #93c5fd;
+            text-decoration: underline;
         }
         
         .screenshot-detected {
@@ -468,15 +472,29 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
+        
+        .password-toggle {
+            position: relative;
+        }
+        
+        .toggle-password {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #6c86a3;
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 <body>
 
 <div class="app">
     <div class="header">
-        <div class="badge">🐔 global messenger · hen's world</div>
+        <div class="badge">🐔 secure global messenger · hen's world</div>
         <h1>Hen's World Chat</h1>
-        <div class="sub">real-time · room-based · worldwide</div>
+        <div class="sub">secure · password protected · worldwide</div>
     </div>
 
     <div class="room-controls">
@@ -509,11 +527,22 @@
 
 <!-- Firebase SDK with your actual configuration -->
 <script type="module">
-    // Import Firebase modules (v10.8.0)
+    // Import Firebase modules
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, push, onChildAdded, query, limitToLast, serverTimestamp, get, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
     
-    // ==================== YOUR FIREBASE CONFIGURATION ====================
+    // Simple hash function for password (not for production, but works for this use)
+    function simpleHash(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return hash.toString(16);
+    }
+    
+    // ==================== FIREBASE CONFIG ====================
     const firebaseConfig = {
         apiKey: "AIzaSyDb0fuG5RUoTtNUuJ10n_A4NCC2GFDaOps",
         authDomain: "hen-s-world.firebaseapp.com",
@@ -522,9 +551,8 @@
         messagingSenderId: "359865594843",
         appId: "1:359865594843:web:3da81e9f7c00bba183adfe"
     };
-    // ====================================================================
+    // =========================================================
     
-    // Global references
     let app;
     let database;
     let messagesRef = null;
@@ -532,170 +560,243 @@
     let currentUsername = null;
     let isFirebaseReady = false;
     
-    // ========== USERNAME SYSTEM ==========
+    // ========== PASSWORD AUTHENTICATION SYSTEM ==========
     
-    // Check if username is available
-    async function isUsernameAvailable(username) {
-        if (!database) return false;
+    // Register new user with password
+    async function registerUser(username, password) {
+        if (!database) return { success: false, message: "Database not ready" };
         
         try {
-            const userRef = ref(database, `active_usernames/${username}`);
+            // Check if user exists
+            const userRef = ref(database, `users/${username}`);
             const snapshot = await get(userRef);
-            return !snapshot.exists();
-        } catch (error) {
-            console.error("Error checking username:", error);
-            return false;
-        }
-    }
-    
-    // Register username in Firebase
-    async function registerUsername(username) {
-        if (!database) return false;
-        
-        try {
-            const userRef = ref(database, `active_usernames/${username}`);
+            
+            if (snapshot.exists()) {
+                return { success: false, message: "Username already exists!" };
+            }
+            
+            // Store user with hashed password
+            const hashedPassword = simpleHash(password);
             await set(userRef, {
                 username: username,
-                joinedAt: serverTimestamp(),
-                timestampMs: Date.now()
+                password: hashedPassword,
+                createdAt: serverTimestamp(),
+                createdAtMs: Date.now()
             });
-            return true;
+            
+            return { success: true, message: "Account created!" };
         } catch (error) {
-            console.error("Error registering username:", error);
-            return false;
+            console.error("Register error:", error);
+            return { success: false, message: "Error creating account" };
         }
     }
     
-    // Unregister username when leaving
-    async function unregisterUsername(username) {
+    // Login existing user
+    async function loginUser(username, password) {
+        if (!database) return { success: false, message: "Database not ready" };
+        
+        try {
+            const userRef = ref(database, `users/${username}`);
+            const snapshot = await get(userRef);
+            
+            if (!snapshot.exists()) {
+                return { success: false, message: "Username not found!" };
+            }
+            
+            const userData = snapshot.val();
+            const hashedPassword = simpleHash(password);
+            
+            if (userData.password === hashedPassword) {
+                return { success: true, message: "Login successful!" };
+            } else {
+                return { success: false, message: "Wrong password!" };
+            }
+        } catch (error) {
+            console.error("Login error:", error);
+            return { success: false, message: "Error logging in" };
+        }
+    }
+    
+    // Track active session
+    async function setActiveSession(username) {
+        if (!database) return;
+        
+        try {
+            const sessionRef = ref(database, `active_sessions/${username}`);
+            await set(sessionRef, {
+                username: username,
+                loginTime: serverTimestamp(),
+                loginTimeMs: Date.now(),
+                sessionId: Date.now() + '_' + Math.random().toString(36).substr(2, 6)
+            });
+        } catch (error) {
+            console.error("Session error:", error);
+        }
+    }
+    
+    // Remove active session
+    async function removeActiveSession(username) {
         if (!database || !username) return;
         
         try {
-            const userRef = ref(database, `active_usernames/${username}`);
-            await set(userRef, null);
+            const sessionRef = ref(database, `active_sessions/${username}`);
+            await set(sessionRef, null);
         } catch (error) {
-            console.error("Error unregistering username:", error);
+            console.error("Remove session error:", error);
         }
     }
     
-    // Show username selection modal
-    function showUsernameModal() {
+    // Show authentication modal (Login/Register)
+    function showAuthModal() {
         return new Promise((resolve) => {
+            let isLoginMode = true;
+            
             const modal = document.createElement('div');
             modal.className = 'modal';
             modal.innerHTML = `
                 <div class="modal-content">
-                    <h2>🐔 Choose Your Name</h2>
-                    <p>Pick a unique username for Hen's World</p>
-                    <input type="text" id="usernameInput" class="username-input" placeholder="e.g., clucky_hen, rooster123" autocomplete="off">
-                    <div id="usernameError" class="username-error"></div>
-                    <div class="modal-buttons">
-                        <button id="confirmUsername" class="modal-btn modal-btn-primary">Join Chat</button>
+                    <h2 id="authTitle">🐔 Login to Hen's World</h2>
+                    <p id="authDesc">Enter your username and password</p>
+                    <input type="text" id="authUsername" class="auth-input" placeholder="Username" autocomplete="off">
+                    <div style="position: relative;">
+                        <input type="password" id="authPassword" class="auth-input" placeholder="Password" autocomplete="off">
+                        <span class="toggle-password" onclick="togglePassword()">👁️</span>
+                    </div>
+                    <div id="authError" class="auth-error"></div>
+                    <div class="auth-buttons">
+                        <button id="authSubmitBtn" class="auth-btn auth-btn-primary">Login</button>
+                    </div>
+                    <div class="auth-switch" id="authSwitch">
+                        Don't have an account? <span>Register</span>
                     </div>
                 </div>
             `;
             
             document.body.appendChild(modal);
             
-            const input = modal.querySelector('#usernameInput');
-            const errorDiv = modal.querySelector('#usernameError');
-            const confirmBtn = modal.querySelector('#confirmUsername');
+            const usernameInput = modal.querySelector('#authUsername');
+            const passwordInput = modal.querySelector('#authPassword');
+            const errorDiv = modal.querySelector('#authError');
+            const submitBtn = modal.querySelector('#authSubmitBtn');
+            const authTitle = modal.querySelector('#authTitle');
+            const authDesc = modal.querySelector('#authDesc');
+            const authSwitch = modal.querySelector('#authSwitch');
             
-            setTimeout(() => input.focus(), 100);
+            // Add toggle password function to window
+            window.togglePassword = () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+            };
             
-            let checkTimeout;
-            input.addEventListener('input', async function() {
-                clearTimeout(checkTimeout);
-                const username = this.value.trim();
-                
-                if (username.length < 3) {
-                    errorDiv.style.display = 'none';
-                    return;
+            setTimeout(() => usernameInput.focus(), 100);
+            
+            const updateMode = () => {
+                if (isLoginMode) {
+                    authTitle.innerHTML = '🐔 Login to Hen\'s World';
+                    authDesc.innerHTML = 'Enter your username and password';
+                    submitBtn.innerHTML = 'Login';
+                    authSwitch.innerHTML = 'Don\'t have an account? <span>Register</span>';
+                } else {
+                    authTitle.innerHTML = '📝 Create Account';
+                    authDesc.innerHTML = 'Choose a username and password';
+                    submitBtn.innerHTML = 'Register';
+                    authSwitch.innerHTML = 'Already have an account? <span>Login</span>';
                 }
-                
-                if (username.length > 20) {
-                    errorDiv.style.display = 'block';
-                    errorDiv.innerHTML = '❌ Username must be less than 20 characters';
-                    errorDiv.style.color = '#ff8888';
-                    return;
-                }
-                
-                errorDiv.style.display = 'block';
-                errorDiv.innerHTML = '⏳ Checking availability...';
-                errorDiv.style.color = '#fbbf24';
-                
-                checkTimeout = setTimeout(async () => {
-                    const available = await isUsernameAvailable(username);
-                    if (available) {
-                        errorDiv.style.display = 'none';
-                    } else {
-                        errorDiv.style.display = 'block';
-                        errorDiv.innerHTML = '❌ Username already taken! Try another one';
-                        errorDiv.style.color = '#ff8888';
-                        modal.classList.add('username-taken');
-                        setTimeout(() => modal.classList.remove('username-taken'), 300);
-                    }
-                }, 500);
+            };
+            
+            authSwitch.addEventListener('click', () => {
+                isLoginMode = !isLoginMode;
+                updateMode();
+                errorDiv.style.display = 'none';
+                usernameInput.value = '';
+                passwordInput.value = '';
             });
             
-            const submitUsername = async () => {
-                const username = input.value.trim();
+            const handleSubmit = async () => {
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value;
                 
                 if (username.length < 3) {
                     errorDiv.style.display = 'block';
                     errorDiv.innerHTML = '❌ Username must be at least 3 characters';
-                    errorDiv.style.color = '#ff8888';
                     return;
                 }
                 
-                if (username.length > 20) {
+                if (password.length < 3) {
                     errorDiv.style.display = 'block';
-                    errorDiv.innerHTML = '❌ Username must be less than 20 characters';
-                    errorDiv.style.color = '#ff8888';
+                    errorDiv.innerHTML = '❌ Password must be at least 3 characters';
                     return;
                 }
                 
-                const available = await isUsernameAvailable(username);
-                if (!available) {
-                    errorDiv.style.display = 'block';
-                    errorDiv.innerHTML = '❌ Username already taken! Try another one';
-                    errorDiv.style.color = '#ff8888';
-                    modal.classList.add('username-taken');
-                    setTimeout(() => modal.classList.remove('username-taken'), 300);
-                    return;
+                errorDiv.style.display = 'block';
+                errorDiv.innerHTML = '⏳ Processing...';
+                errorDiv.style.color = '#fbbf24';
+                
+                let result;
+                if (isLoginMode) {
+                    result = await loginUser(username, password);
+                } else {
+                    result = await registerUser(username, password);
                 }
                 
-                const registered = await registerUsername(username);
-                if (registered) {
+                if (result.success) {
+                    await setActiveSession(username);
                     modal.remove();
                     resolve(username);
                 } else {
                     errorDiv.style.display = 'block';
-                    errorDiv.innerHTML = '❌ Error registering username. Please try again';
+                    errorDiv.innerHTML = `❌ ${result.message}`;
                     errorDiv.style.color = '#ff8888';
+                    modal.classList.add('username-taken');
+                    setTimeout(() => modal.classList.remove('username-taken'), 300);
                 }
             };
             
-            confirmBtn.addEventListener('click', submitUsername);
-            input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') submitUsername();
+            submitBtn.addEventListener('click', handleSubmit);
+            
+            usernameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleSubmit();
+            });
+            
+            passwordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleSubmit();
             });
         });
     }
     
-    // Initialize username system
-    async function initUsername() {
-        const username = await showUsernameModal();
+    // Initialize auth system
+    async function initAuth() {
+        // Check for saved login
+        const savedUsername = localStorage.getItem("hensworld_username");
+        const savedSession = localStorage.getItem("hensworld_session");
+        
+        if (savedUsername && savedSession) {
+            // Try to restore session
+            try {
+                const userRef = ref(database, `users/${savedUsername}`);
+                const snapshot = await get(userRef);
+                if (snapshot.exists()) {
+                    currentUsername = savedUsername;
+                    await setActiveSession(savedUsername);
+                    return savedUsername;
+                }
+            } catch (e) {
+                console.log("Session restore failed");
+            }
+        }
+        
+        // Show login modal
+        const username = await showAuthModal();
         if (username) {
             currentUsername = username;
             localStorage.setItem("hensworld_username", username);
+            localStorage.setItem("hensworld_session", Date.now().toString());
             return username;
-        } else {
-            return await initUsername();
         }
+        return null;
     }
     
-    // Initialize Firebase connection
+    // Initialize Firebase
     async function initFirebase() {
         try {
             app = initializeApp(firebaseConfig);
@@ -703,38 +804,34 @@
             isFirebaseReady = true;
             
             const statusEl = document.getElementById("connectionStatus");
-            statusEl.innerHTML = "✅ Firebase connected · realtime ready";
+            statusEl.innerHTML = "✅ Secure connection · ready";
             statusEl.style.color = "#10b981";
             
-            console.log("🔥 Hen's World Firebase initialized successfully");
+            console.log("🔥 Hen's World Secure Chat initialized");
             return true;
         } catch (error) {
             console.error("Firebase init error:", error);
             const statusEl = document.getElementById("connectionStatus");
-            statusEl.innerHTML = "❌ Firebase connection failed. Check console.";
+            statusEl.innerHTML = "❌ Connection failed";
             statusEl.style.color = "#f87171";
             isFirebaseReady = false;
             return false;
         }
     }
     
-    // Join a specific room
+    // Join a room
     function joinRoom(roomId) {
         if (!database || !isFirebaseReady) {
-            alert("Firebase not ready yet. Please wait or refresh the page.");
+            alert("Connecting... Please wait.");
             return false;
         }
         
         const cleanRoomId = roomId.trim().replace(/[.#$[\]]/g, '_');
         if (!cleanRoomId) return false;
         
-        if (currentRoom === cleanRoomId) {
-            return true;
-        }
+        if (currentRoom === cleanRoomId) return true;
         
-        if (messagesRef) {
-            messagesRef = null;
-        }
+        if (messagesRef) messagesRef = null;
         
         currentRoom = cleanRoomId;
         document.getElementById("currentRoomName").innerText = currentRoom;
@@ -746,36 +843,30 @@
         msgInput.focus();
         
         const container = document.getElementById("messagesContainer");
-        container.innerHTML = '<div class="loading">🐔 joining the coop... loading messages</div>';
+        container.innerHTML = '<div class="loading">🐔 joining room... loading messages</div>';
         
         messagesRef = ref(database, `rooms/${currentRoom}/messages`);
         const messagesQuery = query(messagesRef, limitToLast(100));
         
         onChildAdded(messagesQuery, (snapshot) => {
             const message = snapshot.val();
-            if (message) {
-                displayMessage(message);
-            }
+            if (message) displayMessage(message);
         });
         
         setTimeout(() => {
             if (currentRoom === cleanRoomId) {
-                addSystemMessage(`${currentUsername} 🐔 joined the coop`);
+                addSystemMessage(`${currentUsername} 🐔 joined the room`);
             }
         }, 300);
         
         return true;
     }
     
-    // Send a text message
+    // Send message
     async function sendMessage(text) {
         if (!text.trim()) return false;
         if (!currentRoom) {
             alert("Join a room first!");
-            return false;
-        }
-        if (!database || !isFirebaseReady) {
-            alert("Waiting for Firebase connection...");
             return false;
         }
         
@@ -798,9 +889,9 @@
         }
     }
     
-    // Add system notification
+    // Add system message
     async function addSystemMessage(text) {
-        if (!currentRoom || !database || !isFirebaseReady) return;
+        if (!currentRoom || !database) return;
         
         const systemMsg = {
             sender: "🐔 Hen's World",
@@ -814,7 +905,7 @@
         try {
             await push(ref(database, `rooms/${currentRoom}/messages`), systemMsg);
         } catch (error) {
-            console.warn("System message not sent:", error);
+            console.warn("System message error:", error);
         }
     }
     
@@ -848,7 +939,7 @@
         let timeStr = "now";
         if (message.timestampMs) {
             const date = new Date(message.timestampMs);
-            timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+            timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
         
         const senderDisplay = isSystem ? "🐔 system" : escapeHtml(message.sender);
@@ -874,16 +965,11 @@
         
         joinBtn.addEventListener("click", () => {
             let roomVal = roomInput.value.trim();
-            if (!roomVal) {
-                roomVal = "henhouse-lounge";
-                roomInput.value = roomVal;
-            }
+            if (!roomVal) roomVal = "henhouse-lounge";
             joinRoom(roomVal);
         });
         
-        sendBtn.addEventListener("click", () => {
-            sendMessage(messageInput.value);
-        });
+        sendBtn.addEventListener("click", () => sendMessage(messageInput.value));
         
         messageInput.addEventListener("keydown", (e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -894,32 +980,27 @@
         
         roomInput.value = "henhouse-lounge";
         
-        const tryAutoJoin = () => {
+        setTimeout(() => {
             if (isFirebaseReady && !currentRoom && currentUsername) {
                 joinRoom("henhouse-lounge");
             }
-        };
-        setTimeout(tryAutoJoin, 800);
+        }, 800);
     }
     
     // Update status
     function updateStatusWithUser() {
         const statusDiv = document.getElementById("connectionStatus");
         if (statusDiv && currentUsername) {
-            let connText = isFirebaseReady ? "✅ live" : "⏳ connecting...";
-            statusDiv.innerHTML = `👤 ${escapeHtml(currentUsername)} · ${connText}`;
+            statusDiv.innerHTML = `👤 ${escapeHtml(currentUsername)} · 🔒 secured`;
         }
     }
     
-    // Cleanup on unload
+    // Cleanup
     window.addEventListener('beforeunload', () => {
-        if (currentUsername) {
-            unregisterUsername(currentUsername);
-        }
+        if (currentUsername) removeActiveSession(currentUsername);
     });
     
-    // ========== SCREENSHOT PREVENTION ==========
-    
+    // Screenshot prevention
     function showScreenshotWarning(message = '📸 Screenshots are disabled!') {
         const existingWarning = document.querySelector('.screenshot-warning');
         if (existingWarning) existingWarning.remove();
@@ -930,22 +1011,16 @@
             <div style="background: #1a1f2e; padding: 30px; border-radius: 20px; border: 2px solid #ff4444; max-width: 80%;">
                 <div style="font-size: 3rem;">🚫</div>
                 <div style="font-size: 1.2rem; margin: 15px 0; color: #ff8888;">${message}</div>
-                <div style="font-size: 0.8rem; color: #aaa;">All messages are watermarked with your username</div>
+                <div style="font-size: 0.8rem; color: #aaa;">Messages are protected</div>
                 <button onclick="this.parentElement.parentElement.remove()" style="margin-top: 20px; background: #ff4444; border: none; padding: 8px 20px; border-radius: 20px; color: white;">OK</button>
             </div>
         `;
-        
         document.body.appendChild(warning);
         setTimeout(() => warning.remove(), 3000);
     }
     
-    // Disable context menu
-    document.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        return false;
-    });
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
     
-    // Add watermark
     function addWatermark() {
         const watermark = document.createElement('div');
         watermark.style.cssText = `
@@ -960,48 +1035,33 @@
             font-family: monospace;
             text-align: center;
         `;
-        watermark.innerHTML = `${currentUsername || 'user'} • ${new Date().toLocaleString()} • hensworld.chat • confidential`;
+        watermark.innerHTML = `${currentUsername || 'user'} • ${new Date().toLocaleString()} • secured • hensworld.chat`;
         document.body.appendChild(watermark);
     }
     
-    // Blur on app switch
     window.addEventListener('blur', () => {
-        const appDiv = document.querySelector('.app');
-        if (appDiv) appDiv.classList.add('screenshot-detected');
+        document.querySelector('.app')?.classList.add('screenshot-detected');
     });
     
     window.addEventListener('focus', () => {
-        const appDiv = document.querySelector('.app');
-        if (appDiv) setTimeout(() => appDiv.classList.remove('screenshot-detected'), 300);
+        setTimeout(() => document.querySelector('.app')?.classList.remove('screenshot-detected'), 300);
     });
     
     // ========== INITIALIZATION ==========
-    
     async function init() {
         await initFirebase();
-        await initUsername();
-        setupUI();
-        updateStatusWithUser();
-        addWatermark();
-        
-        if (!isFirebaseReady) {
-            const container = document.getElementById("messagesContainer");
-            container.innerHTML = `
-                <div class="loading" style="background: #1f1a2e; border-left: 4px solid #f97316; padding: 20px; border-radius: 16px; margin: 10px;">
-                    <strong>🐔 Welcome ${escapeHtml(currentUsername)}!</strong><br><br>
-                    ⚠️ Firebase connection issue. Please verify Realtime Database is enabled in test mode.
-                </div>
-            `;
-            document.getElementById("messageInput").disabled = true;
-            document.getElementById("sendBtn").disabled = true;
-        } else {
+        if (isFirebaseReady) {
+            await initAuth();
+            setupUI();
+            updateStatusWithUser();
+            addWatermark();
+            
             setTimeout(() => {
                 if (!currentRoom) joinRoom("henhouse-lounge");
             }, 800);
         }
     }
     
-    // Start the app
     init();
 </script>
 </body>
