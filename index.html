@@ -5,46 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Hen's World — Global Room Messenger</title>
     <style>
-       /* Screenshot Prevention */
-body {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-}
-
-/* Blur effect when screenshot is detected (experimental) */
-.screenshot-detected {
-    filter: blur(10px);
-    transition: filter 0.3s;
-}
-
-/* Warning overlay for screenshots */
-.screenshot-warning {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.95);
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: red;
-    font-size: 1.5rem;
-    text-align: center;
-    flex-direction: column;
-    gap: 20px;
-    animation: fadeIn 0.2s;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
         * {
             margin: 0;
             padding: 0;
@@ -59,6 +19,9 @@ body {
             justify-content: center;
             align-items: center;
             padding: 1rem;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         .app {
@@ -236,6 +199,17 @@ body {
             font-size: 0.9rem;
             line-height: 1.4;
             border: 1px solid #282f39;
+            position: relative;
+        }
+
+        .message-text::after {
+            content: "🔒";
+            position: absolute;
+            bottom: 2px;
+            right: 5px;
+            font-size: 8px;
+            color: rgba(255,255,255,0.15);
+            pointer-events: none;
         }
 
         .own-message {
@@ -361,6 +335,139 @@ body {
         .system-message .message-sender {
             color: #8aa2c2;
         }
+
+        /* Username Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s;
+        }
+        
+        .modal-content {
+            background: #111417;
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 350px;
+            width: 90%;
+            border: 1px solid #2a2f36;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+        
+        .modal-content h2 {
+            color: #eef2ff;
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+        }
+        
+        .modal-content p {
+            color: #6c86a3;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+        }
+        
+        .username-input {
+            width: 100%;
+            background: #050709;
+            border: 1px solid #252b33;
+            border-radius: 40px;
+            padding: 12px 18px;
+            color: #dfe6f0;
+            font-family: monospace;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            outline: none;
+        }
+        
+        .username-input:focus {
+            border-color: #3e6b9e;
+        }
+        
+        .username-error {
+            color: #ff8888;
+            font-size: 0.75rem;
+            margin-bottom: 15px;
+            display: none;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .modal-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 40px;
+            border: none;
+            font-family: monospace;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        
+        .modal-btn-primary {
+            background: #1e293b;
+            color: #b9d0f0;
+            border: 1px solid #2f3a48;
+        }
+        
+        .modal-btn-primary:hover {
+            background: #2e405b;
+            color: white;
+        }
+        
+        .modal-btn-secondary {
+            background: #2d1f1f;
+            color: #ffaaaa;
+            border: 1px solid #8b3a3a;
+        }
+        
+        .username-taken {
+            animation: shake 0.3s;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .screenshot-detected {
+            filter: blur(10px);
+            transition: filter 0.3s;
+        }
+        
+        .screenshot-warning {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: red;
+            font-size: 1.5rem;
+            text-align: center;
+            flex-direction: column;
+            gap: 20px;
+            animation: fadeIn 0.2s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -404,10 +511,9 @@ body {
 <script type="module">
     // Import Firebase modules (v10.8.0)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, query, limitToLast, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, query, limitToLast, serverTimestamp, get, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
     
     // ==================== YOUR FIREBASE CONFIGURATION ====================
-    // This is from your project "Hen's-world" - fully integrated
     const firebaseConfig = {
         apiKey: "AIzaSyDb0fuG5RUoTtNUuJ10n_A4NCC2GFDaOps",
         authDomain: "hen-s-world.firebaseapp.com",
@@ -423,28 +529,173 @@ body {
     let database;
     let messagesRef = null;
     let currentRoom = null;
-    let username = null;
+    let currentUsername = null;
     let isFirebaseReady = false;
     
-    // Generate or retrieve username from localStorage
-    function initUser() {
-        let stored = localStorage.getItem("hensworld_username");
-        if(stored) {
-            username = stored;
-        } else {
-            // Fun Hen-themed usernames for personality
-            let prefixes = ["henny", "clucky", "eggbert", "feathers", "peckish", "roosty", "henrietta", "golden", "sunny", "nestor"];
-            let suffixes = ["flyer", "cluck", "wings", "egg", "hen", "rooster", "hatcher", "coop", "nugget", "flock"];
-            let randPre = prefixes[Math.floor(Math.random() * prefixes.length)];
-            let randSuf = suffixes[Math.floor(Math.random() * suffixes.length)];
-            let num = Math.floor(Math.random() * 900 + 100);
-            username = randPre + "_" + randSuf + num;
-            localStorage.setItem("hensworld_username", username);
+    // ========== USERNAME SYSTEM ==========
+    
+    // Check if username is available
+    async function isUsernameAvailable(username) {
+        if (!database) return false;
+        
+        try {
+            const userRef = ref(database, `active_usernames/${username}`);
+            const snapshot = await get(userRef);
+            return !snapshot.exists();
+        } catch (error) {
+            console.error("Error checking username:", error);
+            return false;
         }
-        return username;
     }
     
-    // Initialize Firebase connection using your config
+    // Register username in Firebase
+    async function registerUsername(username) {
+        if (!database) return false;
+        
+        try {
+            const userRef = ref(database, `active_usernames/${username}`);
+            await set(userRef, {
+                username: username,
+                joinedAt: serverTimestamp(),
+                timestampMs: Date.now()
+            });
+            return true;
+        } catch (error) {
+            console.error("Error registering username:", error);
+            return false;
+        }
+    }
+    
+    // Unregister username when leaving
+    async function unregisterUsername(username) {
+        if (!database || !username) return;
+        
+        try {
+            const userRef = ref(database, `active_usernames/${username}`);
+            await set(userRef, null);
+        } catch (error) {
+            console.error("Error unregistering username:", error);
+        }
+    }
+    
+    // Show username selection modal
+    function showUsernameModal() {
+        return new Promise((resolve) => {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h2>🐔 Choose Your Name</h2>
+                    <p>Pick a unique username for Hen's World</p>
+                    <input type="text" id="usernameInput" class="username-input" placeholder="e.g., clucky_hen, rooster123" autocomplete="off">
+                    <div id="usernameError" class="username-error"></div>
+                    <div class="modal-buttons">
+                        <button id="confirmUsername" class="modal-btn modal-btn-primary">Join Chat</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            const input = modal.querySelector('#usernameInput');
+            const errorDiv = modal.querySelector('#usernameError');
+            const confirmBtn = modal.querySelector('#confirmUsername');
+            
+            setTimeout(() => input.focus(), 100);
+            
+            let checkTimeout;
+            input.addEventListener('input', async function() {
+                clearTimeout(checkTimeout);
+                const username = this.value.trim();
+                
+                if (username.length < 3) {
+                    errorDiv.style.display = 'none';
+                    return;
+                }
+                
+                if (username.length > 20) {
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerHTML = '❌ Username must be less than 20 characters';
+                    errorDiv.style.color = '#ff8888';
+                    return;
+                }
+                
+                errorDiv.style.display = 'block';
+                errorDiv.innerHTML = '⏳ Checking availability...';
+                errorDiv.style.color = '#fbbf24';
+                
+                checkTimeout = setTimeout(async () => {
+                    const available = await isUsernameAvailable(username);
+                    if (available) {
+                        errorDiv.style.display = 'none';
+                    } else {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = '❌ Username already taken! Try another one';
+                        errorDiv.style.color = '#ff8888';
+                        modal.classList.add('username-taken');
+                        setTimeout(() => modal.classList.remove('username-taken'), 300);
+                    }
+                }, 500);
+            });
+            
+            const submitUsername = async () => {
+                const username = input.value.trim();
+                
+                if (username.length < 3) {
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerHTML = '❌ Username must be at least 3 characters';
+                    errorDiv.style.color = '#ff8888';
+                    return;
+                }
+                
+                if (username.length > 20) {
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerHTML = '❌ Username must be less than 20 characters';
+                    errorDiv.style.color = '#ff8888';
+                    return;
+                }
+                
+                const available = await isUsernameAvailable(username);
+                if (!available) {
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerHTML = '❌ Username already taken! Try another one';
+                    errorDiv.style.color = '#ff8888';
+                    modal.classList.add('username-taken');
+                    setTimeout(() => modal.classList.remove('username-taken'), 300);
+                    return;
+                }
+                
+                const registered = await registerUsername(username);
+                if (registered) {
+                    modal.remove();
+                    resolve(username);
+                } else {
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerHTML = '❌ Error registering username. Please try again';
+                    errorDiv.style.color = '#ff8888';
+                }
+            };
+            
+            confirmBtn.addEventListener('click', submitUsername);
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') submitUsername();
+            });
+        });
+    }
+    
+    // Initialize username system
+    async function initUsername() {
+        const username = await showUsernameModal();
+        if (username) {
+            currentUsername = username;
+            localStorage.setItem("hensworld_username", username);
+            return username;
+        } else {
+            return await initUsername();
+        }
+    }
+    
+    // Initialize Firebase connection
     async function initFirebase() {
         try {
             app = initializeApp(firebaseConfig);
@@ -455,7 +706,6 @@ body {
             statusEl.innerHTML = "✅ Firebase connected · realtime ready";
             statusEl.style.color = "#10b981";
             
-            // Optional: Test connection by writing a tiny test flag (silent)
             console.log("🔥 Hen's World Firebase initialized successfully");
             return true;
         } catch (error) {
@@ -475,16 +725,13 @@ body {
             return false;
         }
         
-        // Clean room ID (no special path issues)
         const cleanRoomId = roomId.trim().replace(/[.#$[\]]/g, '_');
         if (!cleanRoomId) return false;
         
         if (currentRoom === cleanRoomId) {
-            // Already in this room
             return true;
         }
         
-        // Leave old room listeners by nullifying reference (onChildAdded will be detached)
         if (messagesRef) {
             messagesRef = null;
         }
@@ -492,22 +739,18 @@ body {
         currentRoom = cleanRoomId;
         document.getElementById("currentRoomName").innerText = currentRoom;
         
-        // Enable message input
         const msgInput = document.getElementById("messageInput");
         const sendBtn = document.getElementById("sendBtn");
         msgInput.disabled = false;
         sendBtn.disabled = false;
         msgInput.focus();
         
-        // Clear messages container and show loading
         const container = document.getElementById("messagesContainer");
         container.innerHTML = '<div class="loading">🐔 joining the coop... loading messages</div>';
         
-        // Build reference to messages in this room
         messagesRef = ref(database, `rooms/${currentRoom}/messages`);
         const messagesQuery = query(messagesRef, limitToLast(100));
         
-        // Listen for new/old messages
         onChildAdded(messagesQuery, (snapshot) => {
             const message = snapshot.val();
             if (message) {
@@ -515,17 +758,16 @@ body {
             }
         });
         
-        // Add system join message after a short delay (avoid race)
         setTimeout(() => {
             if (currentRoom === cleanRoomId) {
-                addSystemMessage(`${username} 🐔 joined the coop`);
+                addSystemMessage(`${currentUsername} 🐔 joined the coop`);
             }
         }, 300);
         
         return true;
     }
     
-    // Send a text message to current room
+    // Send a text message
     async function sendMessage(text) {
         if (!text.trim()) return false;
         if (!currentRoom) {
@@ -538,7 +780,7 @@ body {
         }
         
         const messageData = {
-            sender: username,
+            sender: currentUsername,
             text: text.trim(),
             timestamp: serverTimestamp(),
             timestampMs: Date.now(),
@@ -547,17 +789,16 @@ body {
         
         try {
             await push(ref(database, `rooms/${currentRoom}/messages`), messageData);
-            // Clear input after successful send
             document.getElementById("messageInput").value = "";
             return true;
         } catch (error) {
             console.error("Send error:", error);
-            alert("Failed to send message. Check network/Firebase rules.");
+            alert("Failed to send message.");
             return false;
         }
     }
     
-    // Add system notification (like join/leave events)
+    // Add system notification
     async function addSystemMessage(text) {
         if (!currentRoom || !database || !isFirebaseReady) return;
         
@@ -577,7 +818,7 @@ body {
         }
     }
     
-    // Escape HTML to prevent injection
+    // Escape HTML
     function escapeHtml(str) {
         if (!str) return "";
         const div = document.createElement('div');
@@ -585,18 +826,17 @@ body {
         return div.innerHTML;
     }
     
-    // Display message in chat container
+    // Display message
     function displayMessage(message) {
         const container = document.getElementById("messagesContainer");
         if (!container) return;
         
-        // Remove placeholder loading if exists
         if (container.children.length === 1 && container.children[0].classList?.contains('loading')) {
             container.innerHTML = '';
         }
         
         const msgDiv = document.createElement("div");
-        const isOwn = (message.sender === username);
+        const isOwn = (message.sender === currentUsername);
         const isSystem = message.isSystem === true || message.type === "system" || message.sender === "🐔 Hen's World";
         
         if (isSystem) {
@@ -609,9 +849,6 @@ body {
         if (message.timestampMs) {
             const date = new Date(message.timestampMs);
             timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-        } else if (message.timestamp && typeof message.timestamp === 'object') {
-            // fallback for serverTimestamp placeholder
-            timeStr = "just now";
         }
         
         const senderDisplay = isSystem ? "🐔 system" : escapeHtml(message.sender);
@@ -628,7 +865,7 @@ body {
         container.scrollTop = container.scrollHeight;
     }
     
-    // Setup UI interactions
+    // Setup UI
     function setupUI() {
         const roomInput = document.getElementById("roomInput");
         const joinBtn = document.getElementById("joinRoomBtn");
@@ -655,182 +892,117 @@ body {
             }
         });
         
-        // Set default room hint
         roomInput.value = "henhouse-lounge";
         
-        // Optional: Auto-join default room after Firebase is ready
         const tryAutoJoin = () => {
-            if (isFirebaseReady && !currentRoom) {
+            if (isFirebaseReady && !currentRoom && currentUsername) {
                 joinRoom("henhouse-lounge");
             }
         };
         setTimeout(tryAutoJoin, 800);
     }
     
-    // Helper to update status with username
+    // Update status
     function updateStatusWithUser() {
         const statusDiv = document.getElementById("connectionStatus");
-        if (statusDiv) {
+        if (statusDiv && currentUsername) {
             let connText = isFirebaseReady ? "✅ live" : "⏳ connecting...";
-            statusDiv.innerHTML = `👤 ${escapeHtml(username)} · ${connText}`;
+            statusDiv.innerHTML = `👤 ${escapeHtml(currentUsername)} · ${connText}`;
         }
     }
     
-    // Initialization sequence
+    // Cleanup on unload
+    window.addEventListener('beforeunload', () => {
+        if (currentUsername) {
+            unregisterUsername(currentUsername);
+        }
+    });
+    
+    // ========== SCREENSHOT PREVENTION ==========
+    
+    function showScreenshotWarning(message = '📸 Screenshots are disabled!') {
+        const existingWarning = document.querySelector('.screenshot-warning');
+        if (existingWarning) existingWarning.remove();
+        
+        const warning = document.createElement('div');
+        warning.className = 'screenshot-warning';
+        warning.innerHTML = `
+            <div style="background: #1a1f2e; padding: 30px; border-radius: 20px; border: 2px solid #ff4444; max-width: 80%;">
+                <div style="font-size: 3rem;">🚫</div>
+                <div style="font-size: 1.2rem; margin: 15px 0; color: #ff8888;">${message}</div>
+                <div style="font-size: 0.8rem; color: #aaa;">All messages are watermarked with your username</div>
+                <button onclick="this.parentElement.parentElement.remove()" style="margin-top: 20px; background: #ff4444; border: none; padding: 8px 20px; border-radius: 20px; color: white;">OK</button>
+            </div>
+        `;
+        
+        document.body.appendChild(warning);
+        setTimeout(() => warning.remove(), 3000);
+    }
+    
+    // Disable context menu
+    document.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        return false;
+    });
+    
+    // Add watermark
+    function addWatermark() {
+        const watermark = document.createElement('div');
+        watermark.style.cssText = `
+            position: fixed;
+            bottom: 5px;
+            left: 5px;
+            right: 5px;
+            font-size: 9px;
+            color: rgba(150,150,150,0.25);
+            z-index: 9998;
+            pointer-events: none;
+            font-family: monospace;
+            text-align: center;
+        `;
+        watermark.innerHTML = `${currentUsername || 'user'} • ${new Date().toLocaleString()} • hensworld.chat • confidential`;
+        document.body.appendChild(watermark);
+    }
+    
+    // Blur on app switch
+    window.addEventListener('blur', () => {
+        const appDiv = document.querySelector('.app');
+        if (appDiv) appDiv.classList.add('screenshot-detected');
+    });
+    
+    window.addEventListener('focus', () => {
+        const appDiv = document.querySelector('.app');
+        if (appDiv) setTimeout(() => appDiv.classList.remove('screenshot-detected'), 300);
+    });
+    
+    // ========== INITIALIZATION ==========
+    
     async function init() {
-        initUser();
         await initFirebase();
+        await initUsername();
         setupUI();
         updateStatusWithUser();
+        addWatermark();
         
-        // If Firebase failed, show detailed instructions
         if (!isFirebaseReady) {
             const container = document.getElementById("messagesContainer");
             container.innerHTML = `
                 <div class="loading" style="background: #1f1a2e; border-left: 4px solid #f97316; padding: 20px; border-radius: 16px; margin: 10px;">
-                    <strong>🐔 Welcome to Hen's World!</strong><br><br>
-                    ⚠️ Firebase connection issue. Please verify your project settings:<br><br>
-                    • Make sure Realtime Database is enabled in Firebase Console.<br>
-                    • Set database rules to <code style="background:#000;padding:2px 6px;">{ "rules": { ".read": true, ".write": true } }</code> for development.<br>
-                    • Check that your API key and project ID are correct.<br><br>
-                    🔧 Your config is loaded from "Hen's-world" project. If error persists, go to Firebase Console → Realtime Database → Create Database in test mode.<br><br>
-                    <span style="color:#fbbf24;">✨ Once database is ready, refresh the page and join a room!</span>
+                    <strong>🐔 Welcome ${escapeHtml(currentUsername)}!</strong><br><br>
+                    ⚠️ Firebase connection issue. Please verify Realtime Database is enabled in test mode.
                 </div>
             `;
-            const msgInput = document.getElementById("messageInput");
-            const sendBtn = document.getElementById("sendBtn");
-            if (msgInput) msgInput.disabled = true;
-            if (sendBtn) sendBtn.disabled = true;
+            document.getElementById("messageInput").disabled = true;
+            document.getElementById("sendBtn").disabled = true;
         } else {
-            // small welcoming system message after a short delay if joined room
-            const checkRoomAuto = setInterval(() => {
-                if (currentRoom && isFirebaseReady) {
-                    // add gentle welcome only once
-                    if (!window._welcomeSent) {
-                        window._welcomeSent = true;
-                        setTimeout(() => {
-                            addSystemMessage(`✨ Welcome to room "${currentRoom}". Say hello to the flock!`);
-                        }, 500);
-                    }
-                    clearInterval(checkRoomAuto);
-                }
-            }, 500);
+            setTimeout(() => {
+                if (!currentRoom) joinRoom("henhouse-lounge");
+            }, 800);
         }
     }
-
-    // ========== SCREENSHOT PREVENTION ==========
-
-// Disable Print Screen key
-document.addEventListener('keyup', function(e) {
-    if (e.key === 'PrintScreen') {
-        showScreenshotWarning();
-        return false;
-    }
-});
-
-// Detect keyboard shortcuts
-document.addEventListener('keydown', function(e) {
-    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'S') {
-        e.preventDefault();
-        showScreenshotWarning();
-        return false;
-    }
-    if (e.metaKey && e.shiftKey && (e.key === '3' || e.key === '4')) {
-        e.preventDefault();
-        showScreenshotWarning();
-        return false;
-    }
-});
-
-// Detect visibility change (user left app)
-let wasHidden = false;
-document.addEventListener('visibilitychange', function() {
-    if (document.hidden) {
-        wasHidden = true;
-    } else if (wasHidden) {
-        setTimeout(() => {
-            showScreenshotWarning('⚠️ Screenshots are not allowed');
-            wasHidden = false;
-        }, 500);
-    }
-});
-
-// Blur content when switching apps
-window.addEventListener('blur', function() {
-    const appDiv = document.querySelector('.app');
-    if (appDiv) {
-        appDiv.classList.add('screenshot-detected');
-    }
-});
-
-window.addEventListener('focus', function() {
-    const appDiv = document.querySelector('.app');
-    if (appDiv) {
-        setTimeout(() => {
-            appDiv.classList.remove('screenshot-detected');
-        }, 300);
-    }
-});
-
-// Show warning overlay
-function showScreenshotWarning(message = '📸 Screenshots are disabled!') {
-    const existingWarning = document.querySelector('.screenshot-warning');
-    if (existingWarning) existingWarning.remove();
     
-    const warning = document.createElement('div');
-    warning.className = 'screenshot-warning';
-    warning.innerHTML = `
-        <div style="background: #1a1f2e; padding: 30px; border-radius: 20px; border: 2px solid #ff4444; max-width: 80%;">
-            <div style="font-size: 3rem;">🚫</div>
-            <div style="font-size: 1.2rem; margin: 15px 0; color: #ff8888;">${message}</div>
-            <div style="font-size: 0.8rem; color: #aaa;">This chat is protected</div>
-            <button onclick="this.parentElement.parentElement.remove()" style="margin-top: 20px; background: #ff4444; border: none; padding: 8px 20px; border-radius: 20px; color: white;">OK</button>
-        </div>
-    `;
-    
-    document.body.appendChild(warning);
-    
-    setTimeout(() => {
-        if (warning && warning.remove) warning.remove();
-    }, 3000);
-}
-
-// Disable context menu (long press on mobile)
-document.addEventListener('contextmenu', function(e) {
-    e.preventDefault();
-    return false;
-});
-
-// Disable drag and drop
-document.addEventListener('dragstart', function(e) {
-    e.preventDefault();
-    return false;
-});
-
-// Add watermark
-function addWatermark() {
-    const watermark = document.createElement('div');
-    watermark.style.cssText = `
-        position: fixed;
-        bottom: 10px;
-        right: 10px;
-        font-size: 10px;
-        color: rgba(100,100,100,0.3);
-        z-index: 9998;
-        pointer-events: none;
-        font-family: monospace;
-    `;
-    watermark.innerHTML = `🔒 Hen's World • ${new Date().toLocaleDateString()}`;
-    document.body.appendChild(watermark);
-}
-
-addWatermark();
-
-console.log('🛡️ Screenshot protection enabled');
-
-// ========== END SCREENSHOT PREVENTION ==========
     // Start the app
     init();
 </script>
 </body>
-  </html>
+    </html>
