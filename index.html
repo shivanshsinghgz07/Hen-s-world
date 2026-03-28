@@ -5,6 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Hen's World — Global Room Messenger</title>
     <style>
+       /* Screenshot Prevention */
+body {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Blur effect when screenshot is detected (experimental) */
+.screenshot-detected {
+    filter: blur(10px);
+    transition: filter 0.3s;
+}
+
+/* Warning overlay for screenshots */
+.screenshot-warning {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.95);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: red;
+    font-size: 1.5rem;
+    text-align: center;
+    flex-direction: column;
+    gap: 20px;
+    animation: fadeIn 0.2s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
         * {
             margin: 0;
             padding: 0;
@@ -677,7 +717,118 @@
             }, 500);
         }
     }
+
+    // ========== SCREENSHOT PREVENTION ==========
+
+// Disable Print Screen key
+document.addEventListener('keyup', function(e) {
+    if (e.key === 'PrintScreen') {
+        showScreenshotWarning();
+        return false;
+    }
+});
+
+// Detect keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'S') {
+        e.preventDefault();
+        showScreenshotWarning();
+        return false;
+    }
+    if (e.metaKey && e.shiftKey && (e.key === '3' || e.key === '4')) {
+        e.preventDefault();
+        showScreenshotWarning();
+        return false;
+    }
+});
+
+// Detect visibility change (user left app)
+let wasHidden = false;
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        wasHidden = true;
+    } else if (wasHidden) {
+        setTimeout(() => {
+            showScreenshotWarning('⚠️ Screenshots are not allowed');
+            wasHidden = false;
+        }, 500);
+    }
+});
+
+// Blur content when switching apps
+window.addEventListener('blur', function() {
+    const appDiv = document.querySelector('.app');
+    if (appDiv) {
+        appDiv.classList.add('screenshot-detected');
+    }
+});
+
+window.addEventListener('focus', function() {
+    const appDiv = document.querySelector('.app');
+    if (appDiv) {
+        setTimeout(() => {
+            appDiv.classList.remove('screenshot-detected');
+        }, 300);
+    }
+});
+
+// Show warning overlay
+function showScreenshotWarning(message = '📸 Screenshots are disabled!') {
+    const existingWarning = document.querySelector('.screenshot-warning');
+    if (existingWarning) existingWarning.remove();
     
+    const warning = document.createElement('div');
+    warning.className = 'screenshot-warning';
+    warning.innerHTML = `
+        <div style="background: #1a1f2e; padding: 30px; border-radius: 20px; border: 2px solid #ff4444; max-width: 80%;">
+            <div style="font-size: 3rem;">🚫</div>
+            <div style="font-size: 1.2rem; margin: 15px 0; color: #ff8888;">${message}</div>
+            <div style="font-size: 0.8rem; color: #aaa;">This chat is protected</div>
+            <button onclick="this.parentElement.parentElement.remove()" style="margin-top: 20px; background: #ff4444; border: none; padding: 8px 20px; border-radius: 20px; color: white;">OK</button>
+        </div>
+    `;
+    
+    document.body.appendChild(warning);
+    
+    setTimeout(() => {
+        if (warning && warning.remove) warning.remove();
+    }, 3000);
+}
+
+// Disable context menu (long press on mobile)
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+
+// Disable drag and drop
+document.addEventListener('dragstart', function(e) {
+    e.preventDefault();
+    return false;
+});
+
+// Add watermark
+function addWatermark() {
+    const watermark = document.createElement('div');
+    watermark.style.cssText = `
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        font-size: 10px;
+        color: rgba(100,100,100,0.3);
+        z-index: 9998;
+        pointer-events: none;
+        font-family: monospace;
+    `;
+    watermark.innerHTML = `🔒 Hen's World • ${new Date().toLocaleDateString()}`;
+    document.body.appendChild(watermark);
+}
+
+addWatermark();
+
+console.log('🛡️ Screenshot protection enabled');
+
+// ========== END SCREENSHOT PREVENTION ==========
     // Start the app
     init();
 </script>
