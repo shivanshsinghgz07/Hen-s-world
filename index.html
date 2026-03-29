@@ -622,7 +622,7 @@
         return hash.toString(16);
     }
     
-    // Clean answer - STRICT enforcement (no spaces, no special chars, uppercase)
+    // Clean answer - STRICT enforcement
     function cleanAnswer(answer) {
         if (!answer) return "";
         let cleaned = answer.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -630,13 +630,7 @@
         return cleaned;
     }
     
-    // Validate answer format (strict)
-    function isValidAnswerFormat(answer) {
-        const regex = /^[A-Z0-9]+$/;
-        return regex.test(answer);
-    }
-    
-    // Show Security Questions Modal (for new users) - STRICT VERSION
+    // Show Security Questions Modal
     function showSecurityQuestionsModal(username) {
         return new Promise((resolve) => {
             const shuffled = [...securityQuestions];
@@ -799,7 +793,7 @@
         });
     }
     
-    // Show Forgot Password Modal with Security Questions
+    // Show Forgot Password Modal
     async function showForgotPasswordModal() {
         return new Promise((resolve) => {
             let step = 1;
@@ -893,24 +887,26 @@
                         const input = document.getElementById(`secAnswer_${index}`);
                         const errorEl = document.getElementById(`secError_${index}`);
                         
-                        input.addEventListener('input', function() {
-                            const value = this.value;
-                            const hasSpace = /\s/.test(value);
-                            const hasSpecial = /[^A-Za-z0-9]/.test(value);
-                            
-                            if (hasSpace) {
-                                errorEl.style.display = 'block';
-                                errorEl.innerHTML = '❌ SPACES NOT ALLOWED!';
-                                this.style.borderColor = '#ff4444';
-                            } else if (hasSpecial) {
-                                errorEl.style.display = 'block';
-                                errorEl.innerHTML = '❌ Use ONLY letters and numbers!';
-                                this.style.borderColor = '#ff4444';
-                            } else {
-                                errorEl.style.display = 'none';
-                                this.style.borderColor = '#252b33';
-                            }
-                        });
+                        if (input) {
+                            input.addEventListener('input', function() {
+                                const value = this.value;
+                                const hasSpace = /\s/.test(value);
+                                const hasSpecial = /[^A-Za-z0-9]/.test(value);
+                                
+                                if (hasSpace) {
+                                    errorEl.style.display = 'block';
+                                    errorEl.innerHTML = '❌ SPACES NOT ALLOWED!';
+                                    this.style.borderColor = '#ff4444';
+                                } else if (hasSpecial) {
+                                    errorEl.style.display = 'block';
+                                    errorEl.innerHTML = '❌ Use ONLY letters and numbers!';
+                                    this.style.borderColor = '#ff4444';
+                                } else {
+                                    errorEl.style.display = 'none';
+                                    this.style.borderColor = '#252b33';
+                                }
+                            });
+                        }
                     });
                     
                     setTimeout(() => document.getElementById('secAnswer_0')?.focus(), 100);
@@ -926,25 +922,31 @@
                         const errorEl = document.getElementById(`secError_${i}`);
                         
                         if (!inputAnswer || inputAnswer.trim().length === 0) {
-                            errorEl.style.display = 'block';
-                            errorEl.innerHTML = '❌ This field is required!';
-                            errorEl.style.color = '#ff8888';
+                            if (errorEl) {
+                                errorEl.style.display = 'block';
+                                errorEl.innerHTML = '❌ This field is required!';
+                                errorEl.style.color = '#ff8888';
+                            }
                             allCorrect = false;
                             continue;
                         }
                         
                         if (/\s/.test(inputAnswer)) {
-                            errorEl.style.display = 'block';
-                            errorEl.innerHTML = '❌ SPACES NOT ALLOWED!';
-                            errorEl.style.color = '#ff8888';
+                            if (errorEl) {
+                                errorEl.style.display = 'block';
+                                errorEl.innerHTML = '❌ SPACES NOT ALLOWED!';
+                                errorEl.style.color = '#ff8888';
+                            }
                             allCorrect = false;
                             continue;
                         }
                         
                         if (/[^A-Za-z0-9]/.test(inputAnswer)) {
-                            errorEl.style.display = 'block';
-                            errorEl.innerHTML = '❌ Use ONLY letters and numbers!';
-                            errorEl.style.color = '#ff8888';
+                            if (errorEl) {
+                                errorEl.style.display = 'block';
+                                errorEl.innerHTML = '❌ Use ONLY letters and numbers!';
+                                errorEl.style.color = '#ff8888';
+                            }
                             allCorrect = false;
                             continue;
                         }
@@ -952,11 +954,13 @@
                         const cleanedAnswer = cleanAnswer(inputAnswer);
                         
                         if (cleanedAnswer !== userQuestions[question]) {
-                            errorEl.style.display = 'block';
-                            errorEl.innerHTML = '❌ Incorrect answer!';
-                            errorEl.style.color = '#ff8888';
+                            if (errorEl) {
+                                errorEl.style.display = 'block';
+                                errorEl.innerHTML = '❌ Incorrect answer!';
+                                errorEl.style.color = '#ff8888';
+                            }
                             allCorrect = false;
-                        } else {
+                        } else if (errorEl) {
                             errorEl.style.display = 'none';
                         }
                     }
@@ -1203,7 +1207,7 @@
             
             submitBtn.addEventListener('click', handleSubmit);
             usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
-            passwordInput.addEventListener('keypress', (e) { if (e.key === 'Enter') handleSubmit(); });
+            passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
         });
     }
     
