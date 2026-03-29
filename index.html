@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hen's World — Secure Global Chat</title>
+    <title>Hen's World — Secure Chat</title>
     <style>
         * {
             margin: 0;
@@ -41,6 +41,13 @@
             padding: 1rem 1.5rem;
             border-bottom: 1px solid #1e2329;
             background: #0e1115;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            flex: 1;
         }
 
         .badge {
@@ -63,6 +70,24 @@
             color: #6c86a3;
             font-size: 0.8rem;
             margin-top: 6px;
+        }
+
+        .logout-btn {
+            background: #2d1f1f;
+            border: 1px solid #8b3a3a;
+            border-radius: 40px;
+            padding: 8px 18px;
+            color: #ffaaaa;
+            font-family: monospace;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #4a2a2a;
+            color: #ffcccc;
         }
 
         .room-controls {
@@ -316,6 +341,13 @@
             .message-text {
                 max-width: 95%;
             }
+            .logout-btn {
+                padding: 6px 12px;
+                font-size: 0.7rem;
+            }
+            h1 {
+                font-size: 1.3rem;
+            }
         }
 
         .loading {
@@ -336,7 +368,7 @@
             color: #8aa2c2;
         }
 
-        /* Auth Modal Styles */
+        /* Modal Styles */
         .modal {
             position: fixed;
             top: 0;
@@ -349,16 +381,19 @@
             align-items: center;
             justify-content: center;
             animation: fadeIn 0.3s;
+            overflow-y: auto;
         }
         
         .modal-content {
             background: #111417;
             border-radius: 24px;
             padding: 30px;
-            max-width: 380px;
+            max-width: 420px;
             width: 90%;
             border: 1px solid #2a2f36;
             box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            max-height: 90vh;
+            overflow-y: auto;
         }
         
         .modal-content h2 {
@@ -444,6 +479,29 @@
             text-decoration: underline;
         }
         
+        .forgot-password {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #6c86a3;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .forgot-password span {
+            color: #fbbf24;
+            text-decoration: underline;
+        }
+        
+        .security-note {
+            background: #1a1f2a;
+            border-left: 3px solid #fbbf24;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.7rem;
+            color: #fbbf24;
+        }
+        
         .screenshot-detected {
             filter: blur(10px);
             transition: filter 0.3s;
@@ -460,9 +518,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: red;
-            font-size: 1.5rem;
-            text-align: center;
             flex-direction: column;
             gap: 20px;
             animation: fadeIn 0.2s;
@@ -472,29 +527,18 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
-        
-        .password-toggle {
-            position: relative;
-        }
-        
-        .toggle-password {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            color: #6c86a3;
-            font-size: 0.8rem;
-        }
     </style>
 </head>
 <body>
 
 <div class="app">
     <div class="header">
-        <div class="badge">🐔 secure global messenger · hen's world</div>
-        <h1>Hen's World Chat</h1>
-        <div class="sub">secure · password protected · worldwide</div>
+        <div class="header-left">
+            <div class="badge">🐔 secure messenger · hen's world</div>
+            <h1>Hen's World Chat</h1>
+            <div class="sub">secure · private · worldwide</div>
+        </div>
+        <button id="logoutBtn" class="logout-btn">🚪 Logout</button>
     </div>
 
     <div class="room-controls">
@@ -525,13 +569,38 @@
     </div>
 </div>
 
-<!-- Firebase SDK with your actual configuration -->
 <script type="module">
-    // Import Firebase modules
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, query, limitToLast, serverTimestamp, get, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, query, limitToLast, serverTimestamp, get, set, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
     
-    // Simple hash function for password (not for production, but works for this use)
+    const firebaseConfig = {
+        apiKey: "AIzaSyDb0fuG5RUoTtNUuJ10n_A4NCC2GFDaOps",
+        authDomain: "hen-s-world.firebaseapp.com",
+        projectId: "hen-s-world",
+        storageBucket: "hen-s-world.firebasestorage.app",
+        messagingSenderId: "359865594843",
+        appId: "1:359865594843:web:3da81e9f7c00bba183adfe"
+    };
+    
+    let app, database;
+    let messagesRef = null;
+    let currentRoom = null;
+    let currentUsername = null;
+    let isFirebaseReady = false;
+    
+    // Security Questions
+    const securityQuestions = [
+        "What is your mother's maiden name?",
+        "What was the name of your first pet?",
+        "What was your childhood nickname?",
+        "What is your favorite teacher's name?",
+        "What is your best friend's first name?",
+        "What was the name of your first school?",
+        "What is your father's middle name?",
+        "What city were you born in?"
+    ];
+    
+    // Simple hash function
     function simpleHash(str) {
         let hash = 0;
         for (let i = 0; i < str.length; i++) {
@@ -542,114 +611,338 @@
         return hash.toString(16);
     }
     
-    // ==================== FIREBASE CONFIG ====================
-    const firebaseConfig = {
-        apiKey: "AIzaSyDb0fuG5RUoTtNUuJ10n_A4NCC2GFDaOps",
-        authDomain: "hen-s-world.firebaseapp.com",
-        projectId: "hen-s-world",
-        storageBucket: "hen-s-world.firebasestorage.app",
-        messagingSenderId: "359865594843",
-        appId: "1:359865594843:web:3da81e9f7c00bba183adfe"
-    };
-    // =========================================================
+    // Clean answer (uppercase, no spaces, no special chars)
+    function cleanAnswer(answer) {
+        return answer.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    }
     
-    let app;
-    let database;
-    let messagesRef = null;
-    let currentRoom = null;
-    let currentUsername = null;
-    let isFirebaseReady = false;
-    
-    // ========== PASSWORD AUTHENTICATION SYSTEM ==========
-    
-    // Register new user with password
-    async function registerUser(username, password) {
-        if (!database) return { success: false, message: "Database not ready" };
-        
-        try {
-            // Check if user exists
-            const userRef = ref(database, `users/${username}`);
-            const snapshot = await get(userRef);
+    // Show Security Questions Modal (for new users)
+    function showSecurityQuestionsModal(username) {
+        return new Promise((resolve) => {
+            // Randomly select 3 questions
+            const shuffled = [...securityQuestions];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            const selectedQuestions = shuffled.slice(0, 3);
             
-            if (snapshot.exists()) {
-                return { success: false, message: "Username already exists!" };
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h2>🔐 Security Questions</h2>
+                    <div class="security-note">
+                        ⚠️ IMPORTANT: Use ONLY letters and numbers (no spaces, no special characters).<br>
+                        Answers will be stored in CAPITAL LETTERS. Remember these answers for password recovery!
+                    </div>
+                    <p>Please answer these 3 security questions:</p>
+                    <div id="questionsContainer"></div>
+                    <div id="securityError" class="auth-error"></div>
+                    <div class="auth-buttons">
+                        <button id="securitySubmitBtn" class="auth-btn auth-btn-primary">Submit & Continue</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            const container = modal.querySelector('#questionsContainer');
+            const errorDiv = modal.querySelector('#securityError');
+            const submitBtn = modal.querySelector('#securitySubmitBtn');
+            
+            const answers = {};
+            
+            selectedQuestions.forEach((question, index) => {
+                const div = document.createElement('div');
+                div.style.marginBottom = '15px';
+                div.innerHTML = `
+                    <label style="color: #8db5e5; font-size: 0.75rem; margin-bottom: 5px; display: block;">${index + 1}. ${question}</label>
+                    <input type="text" id="answer_${index}" class="auth-input" placeholder="Your answer (CAPITAL LETTERS only)" style="margin-bottom: 5px;">
+                    <div style="font-size: 0.6rem; color: #6c86a3;">Use only A-Z, 0-9. No spaces.</div>
+                `;
+                container.appendChild(div);
+                answers[question] = div.querySelector(`#answer_${index}`);
+            });
+            
+            const handleSubmit = async () => {
+                const securityAnswers = {};
+                let valid = true;
+                
+                for (let i = 0; i < selectedQuestions.length; i++) {
+                    const question = selectedQuestions[i];
+                    const answer = answers[question].value.trim();
+                    const cleaned = cleanAnswer(answer);
+                    
+                    if (cleaned.length < 2) {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = `❌ Please answer question ${i + 1} (minimum 2 characters)`;
+                        valid = false;
+                        return;
+                    }
+                    securityAnswers[question] = cleaned;
+                }
+                
+                if (valid) {
+                    errorDiv.style.display = 'none';
+                    modal.remove();
+                    resolve(securityAnswers);
+                }
+            };
+            
+            submitBtn.addEventListener('click', handleSubmit);
+            
+            // Add enter key support
+            for (let i = 0; i < selectedQuestions.length; i++) {
+                answers[selectedQuestions[i]].addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') handleSubmit();
+                });
+            }
+        });
+    }
+    
+    // Show Forgot Password Modal with Security Questions
+    async function showForgotPasswordModal() {
+        return new Promise((resolve) => {
+            let step = 1; // 1 = username, 2 = security questions, 3 = new password
+            let username = '';
+            let userQuestions = {};
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content" id="forgotModalContent">
+                    <h2 id="forgotTitle">🔐 Reset Password</h2>
+                    <div id="forgotBody"></div>
+                    <div id="forgotError" class="auth-error"></div>
+                    <div class="auth-buttons">
+                        <button id="forgotBackBtn" class="auth-btn auth-btn-secondary">Back</button>
+                        <button id="forgotNextBtn" class="auth-btn auth-btn-primary">Next</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            const titleEl = modal.querySelector('#forgotTitle');
+            const bodyEl = modal.querySelector('#forgotBody');
+            const errorDiv = modal.querySelector('#forgotError');
+            const backBtn = modal.querySelector('#forgotBackBtn');
+            const nextBtn = modal.querySelector('#forgotNextBtn');
+            
+            async function loadStep() {
+                errorDiv.style.display = 'none';
+                
+                if (step === 1) {
+                    titleEl.innerHTML = '🔐 Enter Username';
+                    bodyEl.innerHTML = `
+                        <p>Enter your username to reset password</p>
+                        <input type="text" id="resetUsername" class="auth-input" placeholder="Username" autocomplete="off">
+                    `;
+                    setTimeout(() => document.getElementById('resetUsername')?.focus(), 100);
+                } 
+                else if (step === 2) {
+                    titleEl.innerHTML = '🔐 Answer Security Questions';
+                    const usernameInput = document.getElementById('resetUsername');
+                    username = usernameInput?.value.trim();
+                    
+                    if (!username || username.length < 3) {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = '❌ Please enter a valid username';
+                        step = 1;
+                        loadStep();
+                        return;
+                    }
+                    
+                    // Load user's security questions from database
+                    const userRef = ref(database, `users/${username}`);
+                    const snapshot = await get(userRef);
+                    
+                    if (!snapshot.exists()) {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = '❌ Username not found!';
+                        step = 1;
+                        loadStep();
+                        return;
+                    }
+                    
+                    const userData = snapshot.val();
+                    if (!userData.securityQuestions) {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = '❌ No security questions found for this account';
+                        step = 1;
+                        loadStep();
+                        return;
+                    }
+                    
+                    userQuestions = userData.securityQuestions;
+                    const questions = Object.keys(userQuestions);
+                    
+                    let html = `<p>Answer these security questions to verify your identity:</p>`;
+                    questions.forEach((question, index) => {
+                        html += `
+                            <div style="margin-bottom: 15px;">
+                                <label style="color: #8db5e5; font-size: 0.75rem; margin-bottom: 5px; display: block;">${index + 1}. ${question}</label>
+                                <input type="text" id="secAnswer_${index}" class="auth-input" placeholder="Your answer (CAPITAL LETTERS only)" style="margin-bottom: 5px;">
+                                <div style="font-size: 0.6rem; color: #6c86a3;">Use only A-Z, 0-9. No spaces.</div>
+                            </div>
+                        `;
+                    });
+                    bodyEl.innerHTML = html;
+                    
+                    questions.forEach((_, index) => {
+                        setTimeout(() => document.getElementById(`secAnswer_${index}`)?.focus(), 100);
+                    });
+                } 
+                else if (step === 3) {
+                    // Verify answers first
+                    const questions = Object.keys(userQuestions);
+                    let allCorrect = true;
+                    
+                    for (let i = 0; i < questions.length; i++) {
+                        const question = questions[i];
+                        const inputAnswer = document.getElementById(`secAnswer_${i}`)?.value.trim();
+                        const cleanedAnswer = cleanAnswer(inputAnswer);
+                        
+                        if (cleanedAnswer !== userQuestions[question]) {
+                            allCorrect = false;
+                            break;
+                        }
+                    }
+                    
+                    if (!allCorrect) {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = '❌ One or more answers are incorrect. Please try again.';
+                        step = 2;
+                        loadStep();
+                        return;
+                    }
+                    
+                    titleEl.innerHTML = '🔐 Set New Password';
+                    bodyEl.innerHTML = `
+                        <p>Enter your new password</p>
+                        <input type="password" id="newPassword" class="auth-input" placeholder="New Password" autocomplete="off">
+                        <input type="password" id="confirmPassword" class="auth-input" placeholder="Confirm New Password" autocomplete="off">
+                    `;
+                    setTimeout(() => document.getElementById('newPassword')?.focus(), 100);
+                }
             }
             
-            // Store user with hashed password
+            backBtn.addEventListener('click', () => {
+                if (step > 1) {
+                    step--;
+                    loadStep();
+                } else {
+                    modal.remove();
+                    resolve(false);
+                }
+            });
+            
+            nextBtn.addEventListener('click', async () => {
+                if (step === 1) {
+                    step++;
+                    loadStep();
+                } 
+                else if (step === 2) {
+                    step++;
+                    loadStep();
+                }
+                else if (step === 3) {
+                    const newPassword = document.getElementById('newPassword')?.value;
+                    const confirmPassword = document.getElementById('confirmPassword')?.value;
+                    
+                    if (!newPassword || newPassword.length < 3) {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = '❌ Password must be at least 3 characters';
+                        return;
+                    }
+                    if (newPassword !== confirmPassword) {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = '❌ Passwords do not match';
+                        return;
+                    }
+                    
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerHTML = '⏳ Resetting password...';
+                    errorDiv.style.color = '#fbbf24';
+                    
+                    const hashedPassword = simpleHash(newPassword);
+                    const userRef = ref(database, `users/${username}`);
+                    await update(userRef, {
+                        password: hashedPassword,
+                        passwordResetAt: serverTimestamp(),
+                        passwordResetAtMs: Date.now()
+                    });
+                    
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerHTML = '✅ Password reset successful! You can now login.';
+                    errorDiv.style.color = '#10b981';
+                    
+                    setTimeout(() => {
+                        modal.remove();
+                        resolve(true);
+                    }, 2000);
+                }
+            });
+            
+            loadStep();
+        });
+    }
+    
+    // ========== AUTH SYSTEM ==========
+    async function registerUser(username, password, securityAnswers) {
+        if (!database) return { success: false, message: "Database not ready" };
+        try {
+            const userRef = ref(database, `users/${username}`);
+            const snapshot = await get(userRef);
+            if (snapshot.exists()) return { success: false, message: "Username already exists!" };
             const hashedPassword = simpleHash(password);
             await set(userRef, {
                 username: username,
                 password: hashedPassword,
+                securityQuestions: securityAnswers,
                 createdAt: serverTimestamp(),
                 createdAtMs: Date.now()
             });
-            
             return { success: true, message: "Account created!" };
         } catch (error) {
-            console.error("Register error:", error);
             return { success: false, message: "Error creating account" };
         }
     }
     
-    // Login existing user
     async function loginUser(username, password) {
         if (!database) return { success: false, message: "Database not ready" };
-        
         try {
             const userRef = ref(database, `users/${username}`);
             const snapshot = await get(userRef);
-            
-            if (!snapshot.exists()) {
-                return { success: false, message: "Username not found!" };
-            }
-            
+            if (!snapshot.exists()) return { success: false, message: "Username not found!" };
             const userData = snapshot.val();
             const hashedPassword = simpleHash(password);
-            
-            if (userData.password === hashedPassword) {
-                return { success: true, message: "Login successful!" };
-            } else {
-                return { success: false, message: "Wrong password!" };
-            }
+            if (userData.password === hashedPassword) return { success: true, message: "Login successful!" };
+            return { success: false, message: "Wrong password!" };
         } catch (error) {
-            console.error("Login error:", error);
             return { success: false, message: "Error logging in" };
         }
     }
     
-    // Track active session
     async function setActiveSession(username) {
         if (!database) return;
-        
-        try {
-            const sessionRef = ref(database, `active_sessions/${username}`);
-            await set(sessionRef, {
-                username: username,
-                loginTime: serverTimestamp(),
-                loginTimeMs: Date.now(),
-                sessionId: Date.now() + '_' + Math.random().toString(36).substr(2, 6)
-            });
-        } catch (error) {
-            console.error("Session error:", error);
-        }
+        const sessionRef = ref(database, `active_sessions/${username}`);
+        await set(sessionRef, {
+            username: username,
+            loginTimeMs: Date.now(),
+            sessionId: Date.now() + '_' + Math.random().toString(36).substr(2, 6)
+        });
     }
     
-    // Remove active session
     async function removeActiveSession(username) {
         if (!database || !username) return;
-        
-        try {
-            const sessionRef = ref(database, `active_sessions/${username}`);
-            await set(sessionRef, null);
-        } catch (error) {
-            console.error("Remove session error:", error);
-        }
+        const sessionRef = ref(database, `active_sessions/${username}`);
+        await set(sessionRef, null);
     }
     
-    // Show authentication modal (Login/Register)
     function showAuthModal() {
         return new Promise((resolve) => {
             let isLoginMode = true;
+            let pendingUsername = null;
             
             const modal = document.createElement('div');
             modal.className = 'modal';
@@ -658,20 +951,15 @@
                     <h2 id="authTitle">🐔 Login to Hen's World</h2>
                     <p id="authDesc">Enter your username and password</p>
                     <input type="text" id="authUsername" class="auth-input" placeholder="Username" autocomplete="off">
-                    <div style="position: relative;">
-                        <input type="password" id="authPassword" class="auth-input" placeholder="Password" autocomplete="off">
-                        <span class="toggle-password" onclick="togglePassword()">👁️</span>
-                    </div>
+                    <input type="password" id="authPassword" class="auth-input" placeholder="Password" autocomplete="off">
                     <div id="authError" class="auth-error"></div>
                     <div class="auth-buttons">
                         <button id="authSubmitBtn" class="auth-btn auth-btn-primary">Login</button>
                     </div>
-                    <div class="auth-switch" id="authSwitch">
-                        Don't have an account? <span>Register</span>
-                    </div>
+                    <div class="auth-switch" id="authSwitch">Don't have an account? <span>Register</span></div>
+                    <div class="forgot-password" id="forgotPassword">🔑 Forgot password? <span>Reset here</span></div>
                 </div>
             `;
-            
             document.body.appendChild(modal);
             
             const usernameInput = modal.querySelector('#authUsername');
@@ -681,14 +969,15 @@
             const authTitle = modal.querySelector('#authTitle');
             const authDesc = modal.querySelector('#authDesc');
             const authSwitch = modal.querySelector('#authSwitch');
-            
-            // Add toggle password function to window
-            window.togglePassword = () => {
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-            };
+            const forgotPassword = modal.querySelector('#forgotPassword');
             
             setTimeout(() => usernameInput.focus(), 100);
+            
+            forgotPassword.addEventListener('click', async () => {
+                modal.remove();
+                await showForgotPasswordModal();
+                showAuthModal().then(resolve);
+            });
             
             const updateMode = () => {
                 if (isLoginMode) {
@@ -696,20 +985,22 @@
                     authDesc.innerHTML = 'Enter your username and password';
                     submitBtn.innerHTML = 'Login';
                     authSwitch.innerHTML = 'Don\'t have an account? <span>Register</span>';
+                    forgotPassword.style.display = 'block';
                 } else {
                     authTitle.innerHTML = '📝 Create Account';
                     authDesc.innerHTML = 'Choose a username and password';
                     submitBtn.innerHTML = 'Register';
                     authSwitch.innerHTML = 'Already have an account? <span>Login</span>';
+                    forgotPassword.style.display = 'none';
                 }
+                errorDiv.style.display = 'none';
+                usernameInput.value = '';
+                passwordInput.value = '';
             };
             
             authSwitch.addEventListener('click', () => {
                 isLoginMode = !isLoginMode;
                 updateMode();
-                errorDiv.style.display = 'none';
-                usernameInput.value = '';
-                passwordInput.value = '';
             });
             
             const handleSubmit = async () => {
@@ -721,7 +1012,6 @@
                     errorDiv.innerHTML = '❌ Username must be at least 3 characters';
                     return;
                 }
-                
                 if (password.length < 3) {
                     errorDiv.style.display = 'block';
                     errorDiv.innerHTML = '❌ Password must be at least 3 characters';
@@ -732,46 +1022,43 @@
                 errorDiv.innerHTML = '⏳ Processing...';
                 errorDiv.style.color = '#fbbf24';
                 
-                let result;
                 if (isLoginMode) {
-                    result = await loginUser(username, password);
+                    const result = await loginUser(username, password);
+                    if (result.success) {
+                        await setActiveSession(username);
+                        modal.remove();
+                        resolve(username);
+                    } else {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = `❌ ${result.message}`;
+                        errorDiv.style.color = '#ff8888';
+                    }
                 } else {
-                    result = await registerUser(username, password);
-                }
-                
-                if (result.success) {
-                    await setActiveSession(username);
-                    modal.remove();
-                    resolve(username);
-                } else {
-                    errorDiv.style.display = 'block';
-                    errorDiv.innerHTML = `❌ ${result.message}`;
-                    errorDiv.style.color = '#ff8888';
-                    modal.classList.add('username-taken');
-                    setTimeout(() => modal.classList.remove('username-taken'), 300);
+                    // Registration - show security questions
+                    pendingUsername = username;
+                    const securityAnswers = await showSecurityQuestionsModal(username);
+                    const result = await registerUser(username, password, securityAnswers);
+                    if (result.success) {
+                        await setActiveSession(username);
+                        modal.remove();
+                        resolve(username);
+                    } else {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = `❌ ${result.message}`;
+                        errorDiv.style.color = '#ff8888';
+                    }
                 }
             };
             
             submitBtn.addEventListener('click', handleSubmit);
-            
-            usernameInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') handleSubmit();
-            });
-            
-            passwordInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') handleSubmit();
-            });
+            usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
+            passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
         });
     }
     
-    // Initialize auth system
     async function initAuth() {
-        // Check for saved login
         const savedUsername = localStorage.getItem("hensworld_username");
-        const savedSession = localStorage.getItem("hensworld_session");
-        
-        if (savedUsername && savedSession) {
-            // Try to restore session
+        if (savedUsername) {
             try {
                 const userRef = ref(database, `users/${savedUsername}`);
                 const snapshot = await get(userRef);
@@ -780,136 +1067,104 @@
                     await setActiveSession(savedUsername);
                     return savedUsername;
                 }
-            } catch (e) {
-                console.log("Session restore failed");
-            }
+            } catch (e) {}
         }
-        
-        // Show login modal
         const username = await showAuthModal();
         if (username) {
             currentUsername = username;
             localStorage.setItem("hensworld_username", username);
-            localStorage.setItem("hensworld_session", Date.now().toString());
             return username;
         }
         return null;
     }
     
-    // Initialize Firebase
+    async function logout() {
+        if (currentUsername) {
+            await removeActiveSession(currentUsername);
+            localStorage.removeItem("hensworld_username");
+            currentUsername = null;
+            currentRoom = null;
+            
+            const container = document.getElementById("messagesContainer");
+            container.innerHTML = '<div class="loading">✨ You have been logged out. Refresh to login again.</div>';
+            
+            document.getElementById("messageInput").disabled = true;
+            document.getElementById("sendBtn").disabled = true;
+            
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        }
+    }
+    
+    // ========== CHAT FUNCTIONS ==========
     async function initFirebase() {
         try {
             app = initializeApp(firebaseConfig);
             database = getDatabase(app);
             isFirebaseReady = true;
-            
-            const statusEl = document.getElementById("connectionStatus");
-            statusEl.innerHTML = "✅ Secure connection · ready";
-            statusEl.style.color = "#10b981";
-            
-            console.log("🔥 Hen's World Secure Chat initialized");
+            document.getElementById("connectionStatus").innerHTML = "✅ Secure connection ready";
             return true;
         } catch (error) {
             console.error("Firebase init error:", error);
-            const statusEl = document.getElementById("connectionStatus");
-            statusEl.innerHTML = "❌ Connection failed";
-            statusEl.style.color = "#f87171";
-            isFirebaseReady = false;
             return false;
         }
     }
     
-    // Join a room
     function joinRoom(roomId) {
-        if (!database || !isFirebaseReady) {
-            alert("Connecting... Please wait.");
-            return false;
-        }
-        
+        if (!database || !isFirebaseReady) return false;
         const cleanRoomId = roomId.trim().replace(/[.#$[\]]/g, '_');
         if (!cleanRoomId) return false;
-        
         if (currentRoom === cleanRoomId) return true;
-        
         if (messagesRef) messagesRef = null;
-        
         currentRoom = cleanRoomId;
         document.getElementById("currentRoomName").innerText = currentRoom;
-        
-        const msgInput = document.getElementById("messageInput");
-        const sendBtn = document.getElementById("sendBtn");
-        msgInput.disabled = false;
-        sendBtn.disabled = false;
-        msgInput.focus();
+        document.getElementById("messageInput").disabled = false;
+        document.getElementById("sendBtn").disabled = false;
         
         const container = document.getElementById("messagesContainer");
-        container.innerHTML = '<div class="loading">🐔 joining room... loading messages</div>';
+        container.innerHTML = '<div class="loading">🐔 loading messages...</div>';
         
         messagesRef = ref(database, `rooms/${currentRoom}/messages`);
         const messagesQuery = query(messagesRef, limitToLast(100));
-        
         onChildAdded(messagesQuery, (snapshot) => {
             const message = snapshot.val();
             if (message) displayMessage(message);
         });
         
-        setTimeout(() => {
-            if (currentRoom === cleanRoomId) {
-                addSystemMessage(`${currentUsername} 🐔 joined the room`);
-            }
-        }, 300);
-        
+        setTimeout(() => addSystemMessage(`${currentUsername} 🐔 joined the room`), 300);
         return true;
     }
     
-    // Send message
     async function sendMessage(text) {
-        if (!text.trim()) return false;
-        if (!currentRoom) {
-            alert("Join a room first!");
-            return false;
-        }
-        
+        if (!text.trim()) return;
+        if (!currentRoom) { alert("Join a room first!"); return; }
         const messageData = {
             sender: currentUsername,
             text: text.trim(),
             timestamp: serverTimestamp(),
-            timestampMs: Date.now(),
-            type: "user"
+            timestampMs: Date.now()
         };
-        
         try {
             await push(ref(database, `rooms/${currentRoom}/messages`), messageData);
             document.getElementById("messageInput").value = "";
-            return true;
         } catch (error) {
-            console.error("Send error:", error);
-            alert("Failed to send message.");
-            return false;
+            alert("Failed to send message");
         }
     }
     
-    // Add system message
     async function addSystemMessage(text) {
         if (!currentRoom || !database) return;
-        
         const systemMsg = {
             sender: "🐔 Hen's World",
             text: text,
             timestamp: serverTimestamp(),
             timestampMs: Date.now(),
-            isSystem: true,
-            type: "system"
+            isSystem: true
         };
-        
-        try {
-            await push(ref(database, `rooms/${currentRoom}/messages`), systemMsg);
-        } catch (error) {
-            console.warn("System message error:", error);
-        }
+        await push(ref(database, `rooms/${currentRoom}/messages`), systemMsg);
     }
     
-    // Escape HTML
     function escapeHtml(str) {
         if (!str) return "";
         const div = document.createElement('div');
@@ -917,24 +1172,17 @@
         return div.innerHTML;
     }
     
-    // Display message
     function displayMessage(message) {
         const container = document.getElementById("messagesContainer");
         if (!container) return;
-        
-        if (container.children.length === 1 && container.children[0].classList?.contains('loading')) {
-            container.innerHTML = '';
-        }
+        if (container.children.length === 1 && container.children[0].classList?.contains('loading')) container.innerHTML = '';
         
         const msgDiv = document.createElement("div");
         const isOwn = (message.sender === currentUsername);
-        const isSystem = message.isSystem === true || message.type === "system" || message.sender === "🐔 Hen's World";
+        const isSystem = message.isSystem === true || message.sender === "🐔 Hen's World";
         
-        if (isSystem) {
-            msgDiv.className = "message system-message";
-        } else {
-            msgDiv.className = `message ${isOwn ? 'own-message' : ''}`;
-        }
+        if (isSystem) msgDiv.className = "message system-message";
+        else msgDiv.className = `message ${isOwn ? 'own-message' : ''}`;
         
         let timeStr = "now";
         if (message.timestampMs) {
@@ -949,19 +1197,18 @@
                 <span class="message-sender">${senderDisplay}</span>
                 <span class="message-time">${timeStr}</span>
             </div>
-            <div class="message-text">${escapeHtml(message.text)}</div>
+            <div class="message-text">${escapeHtml(message.text || '')}</div>
         `;
-        
         container.appendChild(msgDiv);
         container.scrollTop = container.scrollHeight;
     }
     
-    // Setup UI
     function setupUI() {
         const roomInput = document.getElementById("roomInput");
         const joinBtn = document.getElementById("joinRoomBtn");
         const sendBtn = document.getElementById("sendBtn");
         const messageInput = document.getElementById("messageInput");
+        const logoutBtn = document.getElementById("logoutBtn");
         
         joinBtn.addEventListener("click", () => {
             let roomVal = roomInput.value.trim();
@@ -970,7 +1217,6 @@
         });
         
         sendBtn.addEventListener("click", () => sendMessage(messageInput.value));
-        
         messageInput.addEventListener("keydown", (e) => {
             if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -978,87 +1224,29 @@
             }
         });
         
+        logoutBtn.addEventListener("click", logout);
+        
         roomInput.value = "henhouse-lounge";
-        
-        setTimeout(() => {
-            if (isFirebaseReady && !currentRoom && currentUsername) {
-                joinRoom("henhouse-lounge");
-            }
-        }, 800);
+        setTimeout(() => { if (isFirebaseReady && !currentRoom && currentUsername) joinRoom("henhouse-lounge"); }, 800);
     }
-    
-    // Update status
-    function updateStatusWithUser() {
-        const statusDiv = document.getElementById("connectionStatus");
-        if (statusDiv && currentUsername) {
-            statusDiv.innerHTML = `👤 ${escapeHtml(currentUsername)} · 🔒 secured`;
-        }
-    }
-    
-    // Cleanup
-    window.addEventListener('beforeunload', () => {
-        if (currentUsername) removeActiveSession(currentUsername);
-    });
-    
-    // Screenshot prevention
-    function showScreenshotWarning(message = '📸 Screenshots are disabled!') {
-        const existingWarning = document.querySelector('.screenshot-warning');
-        if (existingWarning) existingWarning.remove();
-        
-        const warning = document.createElement('div');
-        warning.className = 'screenshot-warning';
-        warning.innerHTML = `
-            <div style="background: #1a1f2e; padding: 30px; border-radius: 20px; border: 2px solid #ff4444; max-width: 80%;">
-                <div style="font-size: 3rem;">🚫</div>
-                <div style="font-size: 1.2rem; margin: 15px 0; color: #ff8888;">${message}</div>
-                <div style="font-size: 0.8rem; color: #aaa;">Messages are protected</div>
-                <button onclick="this.parentElement.parentElement.remove()" style="margin-top: 20px; background: #ff4444; border: none; padding: 8px 20px; border-radius: 20px; color: white;">OK</button>
-            </div>
-        `;
-        document.body.appendChild(warning);
-        setTimeout(() => warning.remove(), 3000);
-    }
-    
-    document.addEventListener('contextmenu', (e) => e.preventDefault());
     
     function addWatermark() {
         const watermark = document.createElement('div');
-        watermark.style.cssText = `
-            position: fixed;
-            bottom: 5px;
-            left: 5px;
-            right: 5px;
-            font-size: 9px;
-            color: rgba(150,150,150,0.25);
-            z-index: 9998;
-            pointer-events: none;
-            font-family: monospace;
-            text-align: center;
-        `;
-        watermark.innerHTML = `${currentUsername || 'user'} • ${new Date().toLocaleString()} • secured • hensworld.chat`;
+        watermark.style.cssText = `position:fixed; bottom:5px; left:5px; right:5px; font-size:9px; color:rgba(150,150,150,0.25); z-index:9998; pointer-events:none; text-align:center;`;
+        watermark.innerHTML = `${currentUsername} • ${new Date().toLocaleString()} • hensworld.chat`;
         document.body.appendChild(watermark);
     }
     
-    window.addEventListener('blur', () => {
-        document.querySelector('.app')?.classList.add('screenshot-detected');
-    });
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
+    window.addEventListener('blur', () => document.querySelector('.app')?.classList.add('screenshot-detected'));
+    window.addEventListener('focus', () => setTimeout(() => document.querySelector('.app')?.classList.remove('screenshot-detected'), 300));
     
-    window.addEventListener('focus', () => {
-        setTimeout(() => document.querySelector('.app')?.classList.remove('screenshot-detected'), 300);
-    });
-    
-    // ========== INITIALIZATION ==========
     async function init() {
         await initFirebase();
         if (isFirebaseReady) {
             await initAuth();
             setupUI();
-            updateStatusWithUser();
             addWatermark();
-            
-            setTimeout(() => {
-                if (!currentRoom) joinRoom("henhouse-lounge");
-            }, 800);
         }
     }
     
