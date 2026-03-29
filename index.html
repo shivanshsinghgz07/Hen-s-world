@@ -388,7 +388,7 @@
             background: #111417;
             border-radius: 24px;
             padding: 30px;
-            max-width: 420px;
+            max-width: 450px;
             width: 90%;
             border: 1px solid #2a2f36;
             box-shadow: 0 20px 40px rgba(0,0,0,0.5);
@@ -495,11 +495,22 @@
         .security-note {
             background: #1a1f2a;
             border-left: 3px solid #fbbf24;
-            padding: 10px;
+            padding: 12px;
             border-radius: 8px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             font-size: 0.7rem;
             color: #fbbf24;
+        }
+        
+        .security-note strong {
+            color: #ffaa44;
+        }
+        
+        .answer-error {
+            font-size: 0.65rem;
+            margin-top: -10px;
+            margin-bottom: 10px;
+            display: none;
         }
         
         .screenshot-detected {
@@ -611,15 +622,23 @@
         return hash.toString(16);
     }
     
-    // Clean answer (uppercase, no spaces, no special chars)
+    // Clean answer - STRICT enforcement (no spaces, no special chars, uppercase)
     function cleanAnswer(answer) {
-        return answer.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (!answer) return "";
+        let cleaned = answer.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        cleaned = cleaned.replace(/\s/g, '');
+        return cleaned;
     }
     
-    // Show Security Questions Modal (for new users)
+    // Validate answer format (strict)
+    function isValidAnswerFormat(answer) {
+        const regex = /^[A-Z0-9]+$/;
+        return regex.test(answer);
+    }
+    
+    // Show Security Questions Modal (for new users) - STRICT VERSION
     function showSecurityQuestionsModal(username) {
         return new Promise((resolve) => {
-            // Randomly select 3 questions
             const shuffled = [...securityQuestions];
             for (let i = shuffled.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -633,8 +652,12 @@
                 <div class="modal-content">
                     <h2>🔐 Security Questions</h2>
                     <div class="security-note">
-                        ⚠️ IMPORTANT: Use ONLY letters and numbers (no spaces, no special characters).<br>
-                        Answers will be stored in CAPITAL LETTERS. Remember these answers for password recovery!
+                        ⚠️ <strong>IMPORTANT RULES:</strong><br>
+                        • Use ONLY letters (A-Z) and numbers (0-9)<br>
+                        • NO spaces allowed<br>
+                        • NO special characters (!@#$% etc.)<br>
+                        • Answers will be stored in CAPITAL LETTERS<br>
+                        • Example: "My Dog Max" → "MYDOGMAX"
                     </div>
                     <p>Please answer these 3 security questions:</p>
                     <div id="questionsContainer"></div>
@@ -651,34 +674,106 @@
             const submitBtn = modal.querySelector('#securitySubmitBtn');
             
             const answers = {};
+            const answerInputs = [];
             
             selectedQuestions.forEach((question, index) => {
                 const div = document.createElement('div');
                 div.style.marginBottom = '15px';
                 div.innerHTML = `
                     <label style="color: #8db5e5; font-size: 0.75rem; margin-bottom: 5px; display: block;">${index + 1}. ${question}</label>
-                    <input type="text" id="answer_${index}" class="auth-input" placeholder="Your answer (CAPITAL LETTERS only)" style="margin-bottom: 5px;">
-                    <div style="font-size: 0.6rem; color: #6c86a3;">Use only A-Z, 0-9. No spaces.</div>
+                    <input type="text" id="answer_${index}" class="auth-input" placeholder="Your answer (A-Z, 0-9 only - NO spaces)" style="margin-bottom: 5px;">
+                    <div style="font-size: 0.65rem; margin-top: -10px; margin-bottom: 10px; display: none;" id="error_${index}" class="answer-error"></div>
                 `;
                 container.appendChild(div);
-                answers[question] = div.querySelector(`#answer_${index}`);
+                const input = div.querySelector(`#answer_${index}`);
+                const inputError = div.querySelector(`#error_${index}`);
+                answers[question] = input;
+                answerInputs.push({ input, error: inputError });
+                
+                input.addEventListener('input', function() {
+                    const value = this.value;
+                    const hasSpace = /\s/.test(value);
+                    const hasSpecial = /[^A-Za-z0-9]/.test(value);
+                    
+                    if (hasSpace) {
+                        inputError.style.display = 'block';
+                        inputError.innerHTML = '❌ SPACES NOT ALLOWED!';
+                        inputError.style.color = '#ff8888';
+                        this.style.borderColor = '#ff4444';
+                    } else if (hasSpecial) {
+                        inputError.style.display = 'block';
+                        inputError.innerHTML = '❌ Use ONLY letters and numbers!';
+                        inputError.style.color = '#ff8888';
+                        this.style.borderColor = '#ff4444';
+                    } else {
+                        const cleaned = cleanAnswer(value);
+                        if (cleaned.length > 0) {
+                            inputError.style.display = 'block';
+                            inputError.style.color = '#10b981';
+                            inputError.innerHTML = `✅ Will be stored as: "${cleaned}"`;
+                            this.style.borderColor = '#252b33';
+                        } else if (value.length > 0) {
+                            inputError.style.display = 'block';
+                            inputError.innerHTML = '❌ Invalid characters detected!';
+                            inputError.style.color = '#ff8888';
+                            this.style.borderColor = '#ff4444';
+                        } else {
+                            inputError.style.display = 'none';
+                            this.style.borderColor = '#252b33';
+                        }
+                    }
+                });
             });
             
             const handleSubmit = async () => {
                 const securityAnswers = {};
                 let valid = true;
                 
+                errorDiv.style.display = 'none';
+                
                 for (let i = 0; i < selectedQuestions.length; i++) {
                     const question = selectedQuestions[i];
-                    const answer = answers[question].value.trim();
-                    const cleaned = cleanAnswer(answer);
+                    const answer = answers[question].value;
+                    const inputElement = answers[question];
+                    const inputError = answerInputs[i].error;
                     
-                    if (cleaned.length < 2) {
-                        errorDiv.style.display = 'block';
-                        errorDiv.innerHTML = `❌ Please answer question ${i + 1} (minimum 2 characters)`;
+                    if (!answer || answer.trim().length === 0) {
+                        inputError.style.display = 'block';
+                        inputError.innerHTML = '❌ This field is required!';
+                        inputError.style.color = '#ff8888';
+                        inputElement.style.borderColor = '#ff4444';
                         valid = false;
-                        return;
+                        continue;
                     }
+                    
+                    if (/\s/.test(answer)) {
+                        inputError.style.display = 'block';
+                        inputError.innerHTML = '❌ SPACES ARE NOT ALLOWED! Please remove spaces.';
+                        inputError.style.color = '#ff8888';
+                        inputElement.style.borderColor = '#ff4444';
+                        valid = false;
+                        continue;
+                    }
+                    
+                    if (/[^A-Za-z0-9]/.test(answer)) {
+                        inputError.style.display = 'block';
+                        inputError.innerHTML = '❌ Only letters (A-Z) and numbers (0-9) allowed!';
+                        inputError.style.color = '#ff8888';
+                        inputElement.style.borderColor = '#ff4444';
+                        valid = false;
+                        continue;
+                    }
+                    
+                    const cleaned = cleanAnswer(answer);
+                    if (cleaned.length < 2) {
+                        inputError.style.display = 'block';
+                        inputError.innerHTML = '❌ Answer must be at least 2 characters!';
+                        inputError.style.color = '#ff8888';
+                        inputElement.style.borderColor = '#ff4444';
+                        valid = false;
+                        continue;
+                    }
+                    
                     securityAnswers[question] = cleaned;
                 }
                 
@@ -686,24 +781,28 @@
                     errorDiv.style.display = 'none';
                     modal.remove();
                     resolve(securityAnswers);
+                } else {
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerHTML = '❌ Please fix the errors above before continuing.';
+                    errorDiv.style.color = '#ff8888';
+                    const firstError = document.querySelector('.answer-error[style*="display: block"]');
+                    if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             };
             
             submitBtn.addEventListener('click', handleSubmit);
-            
-            // Add enter key support
-            for (let i = 0; i < selectedQuestions.length; i++) {
-                answers[selectedQuestions[i]].addEventListener('keypress', (e) => {
+            answerInputs.forEach(({ input }) => {
+                input.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') handleSubmit();
                 });
-            }
+            });
         });
     }
     
     // Show Forgot Password Modal with Security Questions
     async function showForgotPasswordModal() {
         return new Promise((resolve) => {
-            let step = 1; // 1 = username, 2 = security questions, 3 = new password
+            let step = 1;
             let username = '';
             let userQuestions = {};
             
@@ -752,7 +851,6 @@
                         return;
                     }
                     
-                    // Load user's security questions from database
                     const userRef = ref(database, `users/${username}`);
                     const snapshot = await get(userRef);
                     
@@ -776,41 +874,97 @@
                     userQuestions = userData.securityQuestions;
                     const questions = Object.keys(userQuestions);
                     
-                    let html = `<p>Answer these security questions to verify your identity:</p>`;
+                    let html = `<p>Answer these security questions to verify your identity:</p>
+                                <div class="security-note" style="margin-bottom: 15px;">
+                                    ⚠️ Use ONLY letters and numbers. NO spaces. Answers are case-sensitive (use CAPITALS).
+                                </div>`;
                     questions.forEach((question, index) => {
                         html += `
                             <div style="margin-bottom: 15px;">
                                 <label style="color: #8db5e5; font-size: 0.75rem; margin-bottom: 5px; display: block;">${index + 1}. ${question}</label>
-                                <input type="text" id="secAnswer_${index}" class="auth-input" placeholder="Your answer (CAPITAL LETTERS only)" style="margin-bottom: 5px;">
-                                <div style="font-size: 0.6rem; color: #6c86a3;">Use only A-Z, 0-9. No spaces.</div>
+                                <input type="text" id="secAnswer_${index}" class="auth-input" placeholder="Your answer (A-Z, 0-9 only)" style="margin-bottom: 5px;">
+                                <div style="font-size: 0.6rem; color: #ff8888;" id="secError_${index}" class="answer-error"></div>
                             </div>
                         `;
                     });
                     bodyEl.innerHTML = html;
                     
                     questions.forEach((_, index) => {
-                        setTimeout(() => document.getElementById(`secAnswer_${index}`)?.focus(), 100);
+                        const input = document.getElementById(`secAnswer_${index}`);
+                        const errorEl = document.getElementById(`secError_${index}`);
+                        
+                        input.addEventListener('input', function() {
+                            const value = this.value;
+                            const hasSpace = /\s/.test(value);
+                            const hasSpecial = /[^A-Za-z0-9]/.test(value);
+                            
+                            if (hasSpace) {
+                                errorEl.style.display = 'block';
+                                errorEl.innerHTML = '❌ SPACES NOT ALLOWED!';
+                                this.style.borderColor = '#ff4444';
+                            } else if (hasSpecial) {
+                                errorEl.style.display = 'block';
+                                errorEl.innerHTML = '❌ Use ONLY letters and numbers!';
+                                this.style.borderColor = '#ff4444';
+                            } else {
+                                errorEl.style.display = 'none';
+                                this.style.borderColor = '#252b33';
+                            }
+                        });
                     });
+                    
+                    setTimeout(() => document.getElementById('secAnswer_0')?.focus(), 100);
                 } 
                 else if (step === 3) {
-                    // Verify answers first
                     const questions = Object.keys(userQuestions);
                     let allCorrect = true;
+                    const errorMessages = [];
                     
                     for (let i = 0; i < questions.length; i++) {
                         const question = questions[i];
-                        const inputAnswer = document.getElementById(`secAnswer_${i}`)?.value.trim();
+                        const inputAnswer = document.getElementById(`secAnswer_${i}`)?.value;
+                        const errorEl = document.getElementById(`secError_${i}`);
+                        
+                        if (!inputAnswer || inputAnswer.trim().length === 0) {
+                            errorEl.style.display = 'block';
+                            errorEl.innerHTML = '❌ This field is required!';
+                            errorEl.style.color = '#ff8888';
+                            allCorrect = false;
+                            continue;
+                        }
+                        
+                        if (/\s/.test(inputAnswer)) {
+                            errorEl.style.display = 'block';
+                            errorEl.innerHTML = '❌ SPACES NOT ALLOWED!';
+                            errorEl.style.color = '#ff8888';
+                            allCorrect = false;
+                            continue;
+                        }
+                        
+                        if (/[^A-Za-z0-9]/.test(inputAnswer)) {
+                            errorEl.style.display = 'block';
+                            errorEl.innerHTML = '❌ Use ONLY letters and numbers!';
+                            errorEl.style.color = '#ff8888';
+                            allCorrect = false;
+                            continue;
+                        }
+                        
                         const cleanedAnswer = cleanAnswer(inputAnswer);
                         
                         if (cleanedAnswer !== userQuestions[question]) {
+                            errorEl.style.display = 'block';
+                            errorEl.innerHTML = '❌ Incorrect answer!';
+                            errorEl.style.color = '#ff8888';
                             allCorrect = false;
-                            break;
+                        } else {
+                            errorEl.style.display = 'none';
                         }
                     }
                     
                     if (!allCorrect) {
                         errorDiv.style.display = 'block';
                         errorDiv.innerHTML = '❌ One or more answers are incorrect. Please try again.';
+                        errorDiv.style.color = '#ff8888';
                         step = 2;
                         loadStep();
                         return;
@@ -819,7 +973,7 @@
                     titleEl.innerHTML = '🔐 Set New Password';
                     bodyEl.innerHTML = `
                         <p>Enter your new password</p>
-                        <input type="password" id="newPassword" class="auth-input" placeholder="New Password" autocomplete="off">
+                        <input type="password" id="newPassword" class="auth-input" placeholder="New Password (min 3 characters)" autocomplete="off">
                         <input type="password" id="confirmPassword" class="auth-input" placeholder="Confirm New Password" autocomplete="off">
                     `;
                     setTimeout(() => document.getElementById('newPassword')?.focus(), 100);
@@ -942,7 +1096,6 @@
     function showAuthModal() {
         return new Promise((resolve) => {
             let isLoginMode = true;
-            let pendingUsername = null;
             
             const modal = document.createElement('div');
             modal.className = 'modal';
@@ -1034,8 +1187,6 @@
                         errorDiv.style.color = '#ff8888';
                     }
                 } else {
-                    // Registration - show security questions
-                    pendingUsername = username;
                     const securityAnswers = await showSecurityQuestionsModal(username);
                     const result = await registerUser(username, password, securityAnswers);
                     if (result.success) {
@@ -1052,7 +1203,7 @@
             
             submitBtn.addEventListener('click', handleSubmit);
             usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
-            passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
+            passwordInput.addEventListener('keypress', (e) { if (e.key === 'Enter') handleSubmit(); });
         });
     }
     
