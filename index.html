@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Hen's World — Chat</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             background: #0a0c0f;
@@ -27,13 +23,14 @@
             height: 90vh;
             background: #111417;
             border-radius: 24px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
             overflow: hidden;
             border: 1px solid #2a2f36;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
         }
 
+        /* Header */
         .header {
             padding: 0.8rem 1.2rem;
             border-bottom: 1px solid #1e2329;
@@ -42,24 +39,8 @@
             justify-content: space-between;
             align-items: center;
         }
-
-        .header-left {
-            flex: 1;
-        }
-
-        .badge {
-            font-size: 0.65rem;
-            color: #6c7a89;
-            text-transform: uppercase;
-            margin-bottom: 0.2rem;
-        }
-
-        h1 {
-            font-size: 1.4rem;
-            font-weight: 500;
-            color: #eef2ff;
-        }
-
+        .badge { font-size: 0.65rem; color: #6c7a89; text-transform: uppercase; margin-bottom: 0.2rem; }
+        h1 { font-size: 1.4rem; font-weight: 500; color: #eef2ff; }
         .logout-btn {
             background: #2d1f1f;
             border: 1px solid #8b3a3a;
@@ -72,11 +53,9 @@
             cursor: pointer;
             transition: 0.2s;
         }
+        .logout-btn:hover { background: #4a2a2a; }
 
-        .logout-btn:hover {
-            background: #4a2a2a;
-        }
-
+        /* User Bar */
         .user-bar {
             background: #0b0e12;
             border-bottom: 1px solid #1a1f26;
@@ -86,26 +65,10 @@
             justify-content: space-between;
             gap: 10px;
         }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.75rem;
-            color: #93c5fd;
-        }
-
-        .username-display {
-            font-weight: bold;
-            color: #8db5e5;
-        }
-
-        .user-bar-buttons {
-            display: flex;
-            gap: 8px;
-        }
-
-        .online-btn {
+        .user-info { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #93c5fd; }
+        .username-display { font-weight: bold; color: #8db5e5; }
+        .user-bar-buttons { display: flex; gap: 8px; }
+        .online-btn, .auto-delete-select {
             background: #1e293b;
             border: 1px solid #2f3a48;
             border-radius: 40px;
@@ -113,36 +76,13 @@
             font-size: 0.65rem;
             cursor: pointer;
             color: #b9d0f0;
-        }
-        
-        .online-btn:hover {
-            background: #2e405b;
-        }
-
-        .auto-delete-select {
-            background: #1e293b;
-            border: 1px solid #2f3a48;
-            border-radius: 40px;
-            padding: 4px 8px;
-            font-size: 0.65rem;
-            cursor: pointer;
-            color: #b9d0f0;
             font-family: monospace;
         }
+        .online-btn:hover { background: #2e405b; }
 
-        .room-controls {
-            padding: 0.5rem 1.2rem;
-            background: #0b0e12;
-            border-bottom: 1px solid #1a1f26;
-        }
-
-        .room-label {
-            font-size: 0.6rem;
-            color: #7e8c9e;
-            text-transform: uppercase;
-            margin-bottom: 3px;
-        }
-
+        /* Room Controls */
+        .room-controls { padding: 0.5rem 1.2rem; background: #0b0e12; border-bottom: 1px solid #1a1f26; }
+        .room-label { font-size: 0.6rem; color: #7e8c9e; text-transform: uppercase; margin-bottom: 3px; }
         .room-field {
             display: flex;
             background: #050709;
@@ -150,10 +90,6 @@
             border-radius: 40px;
             overflow: hidden;
         }
-        .room-field:focus-within {
-            border-color: #3e6b9e;
-        }
-
         .room-field input {
             flex: 1;
             background: transparent;
@@ -164,7 +100,6 @@
             font-size: 0.8rem;
             outline: none;
         }
-
         .room-field button {
             background: #1e293b;
             border: none;
@@ -175,10 +110,9 @@
             cursor: pointer;
             font-size: 0.7rem;
         }
-        .room-field button:hover {
-            background: #2d3e5a;
-        }
+        .room-field button:hover { background: #2d3e5a; }
 
+        /* Messages */
         .messages-container {
             flex: 1;
             overflow-y: auto;
@@ -188,20 +122,8 @@
             gap: 8px;
             background: #0f1219;
         }
-
-        .message {
-            display: flex;
-            flex-direction: column;
-            animation: fadeSlide 0.2s ease;
-            position: relative;
-        }
-
-        .message-content {
-            display: flex;
-            align-items: flex-end;
-            gap: 6px;
-        }
-
+        .message { display: flex; flex-direction: column; animation: fadeSlide 0.2s ease; position: relative; }
+        .message-content { display: flex; align-items: flex-end; gap: 6px; }
         .message-bubble {
             background: #181e26;
             padding: 8px 14px;
@@ -218,22 +140,14 @@
             border: 1px solid #282f39;
             position: relative;
         }
-
-        .own-message {
-            align-items: flex-end;
-        }
-        
+        .own-message { align-items: flex-end; }
         .own-message .message-bubble {
             background: #1e2a3a;
             border-color: #2f4b6e;
             border-top-right-radius: 4px;
             border-top-left-radius: 18px;
         }
-        
-        .own-message .message-content {
-            justify-content: flex-end;
-        }
-
+        .own-message .message-content { justify-content: flex-end; }
         .message-header {
             font-size: 0.7rem;
             color: #5f7f9e;
@@ -241,22 +155,9 @@
             display: flex;
             gap: 8px;
         }
-
-        .message-sender {
-            font-weight: 600;
-            color: #8db5e5;
-        }
-
-        .message-time {
-            font-size: 0.65rem;
-            color: #4a5b72;
-        }
-
-        .message-status {
-            font-size: 0.7rem;
-            margin-left: 3px;
-        }
-
+        .message-sender { font-weight: 600; color: #8db5e5; }
+        .message-time { font-size: 0.65rem; color: #4a5b72; }
+        .message-status { font-size: 0.7rem; margin-left: 3px; }
         .message-actions {
             position: absolute;
             right: 0;
@@ -268,11 +169,7 @@
             gap: 8px;
             z-index: 10;
         }
-        
-        .message:hover .message-actions {
-            display: flex;
-        }
-        
+        .message:hover .message-actions { display: flex; }
         .action-btn {
             background: none;
             border: none;
@@ -281,20 +178,8 @@
             font-size: 0.7rem;
             padding: 2px 5px;
         }
-        
-        .action-btn:hover {
-            color: white;
-        }
-
-        /* System Message Style */
-        .system-message {
-            align-items: center !important;
-        }
-        
-        .system-message .message-content {
-            justify-content: center !important;
-        }
-        
+        .system-message { align-items: center !important; }
+        .system-message .message-content { justify-content: center !important; }
         .system-message .message-bubble {
             background: #2a2f3a;
             border: 1px solid #4a5b72;
@@ -306,11 +191,7 @@
             padding: 5px 18px;
             max-width: 80%;
         }
-        
-        .system-message .message-header {
-            display: none;
-        }
-
+        .system-message .message-header { display: none; }
         .message-bubble::after {
             content: "🔒";
             position: absolute;
@@ -321,18 +202,9 @@
             pointer-events: none;
         }
 
-        .input-area {
-            padding: 0.8rem 1.2rem 1rem;
-            background: #0b0e12;
-            border-top: 1px solid #1a1f26;
-        }
-
-        .message-form {
-            display: flex;
-            gap: 10px;
-            align-items: flex-end;
-        }
-
+        /* Input */
+        .input-area { padding: 0.8rem 1.2rem 1rem; background: #0b0e12; border-top: 1px solid #1a1f26; }
+        .message-form { display: flex; gap: 10px; align-items: flex-end; }
         .message-input-wrapper {
             flex: 1;
             background: #05070c;
@@ -340,10 +212,7 @@
             border-radius: 28px;
             padding: 5px 14px;
         }
-        .message-input-wrapper:focus-within {
-            border-color: #3e6b9e;
-        }
-
+        .message-input-wrapper:focus-within { border-color: #3e6b9e; }
         #messageInput {
             width: 100%;
             background: transparent;
@@ -356,7 +225,6 @@
             outline: none;
             resize: none;
         }
-
         #sendBtn {
             background: #1f2a3c;
             border: none;
@@ -368,49 +236,22 @@
             font-size: 0.8rem;
             border: 1px solid #2f3a48;
         }
-        #sendBtn:hover {
-            background: #2e405b;
-        }
+        #sendBtn:hover { background: #2e405b; }
 
         @keyframes fadeSlide {
-            from {
-                opacity: 0;
-                transform: translateY(6px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-
-        .messages-container::-webkit-scrollbar {
-            width: 5px;
-        }
-        .messages-container::-webkit-scrollbar-track {
-            background: #0a0d12;
-        }
-        .messages-container::-webkit-scrollbar-thumb {
-            background: #2e3a48;
-            border-radius: 8px;
-        }
-
+        .messages-container::-webkit-scrollbar { width: 5px; }
+        .messages-container::-webkit-scrollbar-track { background: #0a0d12; }
+        .messages-container::-webkit-scrollbar-thumb { background: #2e3a48; border-radius: 8px; }
         @media (max-width: 550px) {
-            .message-bubble {
-                max-width: 95%;
-                font-size: 0.9rem;
-            }
-            .user-bar-buttons {
-                gap: 5px;
-            }
+            .message-bubble { max-width: 95%; font-size: 0.9rem; }
+            .user-bar-buttons { gap: 5px; }
         }
+        .loading { text-align: center; padding: 20px; color: #6c7a89; font-size: 0.8rem; }
 
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #6c7a89;
-            font-size: 0.8rem;
-        }
-
+        /* Popups */
         .info-popup, .online-popup {
             position: fixed;
             top: 50%;
@@ -425,57 +266,82 @@
             width: 80%;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        
-        .info-popup h3, .online-popup h3 {
-            color: #eef2ff;
-            margin-bottom: 12px;
-            font-size: 1rem;
-        }
-        
-        .seen-list, .online-list {
-            max-height: 180px;
-            overflow-y: auto;
-        }
-        
-        .seen-item, .online-item {
-            padding: 6px;
-            border-bottom: 1px solid #2a2f36;
-            color: #b9d0f0;
-            font-size: 0.75rem;
+        .info-popup h3, .online-popup h3 { color: #eef2ff; margin-bottom: 12px; font-size: 1rem; }
+        .seen-list, .online-list { max-height: 180px; overflow-y: auto; }
+        .seen-item, .online-item { padding: 6px; border-bottom: 1px solid #2a2f36; color: #b9d0f0; font-size: 0.75rem; display: flex; align-items: center; gap: 8px; }
+        .status-dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; display: inline-block; }
+        .close-popup { margin-top: 12px; background: #2e405b; border: none; padding: 6px 12px; border-radius: 16px; color: white; cursor: pointer; width: 100%; font-size: 0.7rem; }
+
+        /* Modal Styles (Original Look) */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 10000;
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
+            animation: fadeIn 0.3s;
+            overflow-y: auto;
         }
-        
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background: #10b981;
-            border-radius: 50%;
-            display: inline-block;
+        .modal-content {
+            background: #111417;
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 380px;
+            width: 90%;
+            border: 1px solid #2a2f36;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
         }
-        
-        .close-popup {
-            margin-top: 12px;
-            background: #2e405b;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 16px;
-            color: white;
-            cursor: pointer;
+        .modal-content h2 { color: #eef2ff; margin-bottom: 10px; font-size: 1.5rem; }
+        .modal-content p { color: #6c86a3; margin-bottom: 20px; font-size: 0.85rem; }
+        .auth-input {
             width: 100%;
+            background: #050709;
+            border: 1px solid #252b33;
+            border-radius: 40px;
+            padding: 12px 18px;
+            color: #dfe6f0;
+            font-family: monospace;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            outline: none;
+        }
+        .auth-input:focus { border-color: #3e6b9e; }
+        .auth-error { color: #ff8888; font-size: 0.75rem; margin-bottom: 15px; display: none; }
+        .auth-buttons { display: flex; gap: 12px; margin-bottom: 15px; }
+        .auth-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 40px;
+            border: none;
+            font-family: monospace;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .auth-btn-primary { background: #1e293b; color: #b9d0f0; border: 1px solid #2f3a48; }
+        .auth-btn-primary:hover { background: #2e405b; color: white; }
+        .auth-btn-secondary { background: #2d1f1f; color: #ffaaaa; border: 1px solid #8b3a3a; }
+        .auth-switch { text-align: center; font-size: 0.8rem; color: #6c86a3; cursor: pointer; margin-top: 10px; }
+        .auth-switch span { color: #93c5fd; text-decoration: underline; }
+        .forgot-password { text-align: center; font-size: 0.7rem; color: #6c86a3; cursor: pointer; margin-top: 10px; }
+        .forgot-password span { color: #fbbf24; text-decoration: underline; }
+        .security-note {
+            background: #1a1f2a;
+            border-left: 3px solid #fbbf24;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
             font-size: 0.7rem;
+            color: #fbbf24;
         }
-
-        .screenshot-detected {
-            filter: blur(10px);
-            transition: filter 0.3s;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
+        .answer-error { font-size: 0.6rem; margin-top: -8px; margin-bottom: 8px; display: none; }
+        .screenshot-detected { filter: blur(10px); transition: filter 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -506,12 +372,10 @@
     </div>
 
     <div class="room-controls">
-        <div class="room-input-group">
-            <div class="room-label">🔗 room</div>
-            <div class="room-field">
-                <input type="text" id="roomInput" placeholder="room name" autocomplete="off">
-                <button id="joinRoomBtn">join</button>
-            </div>
+        <div class="room-label">🔗 room</div>
+        <div class="room-field">
+            <input type="text" id="roomInput" placeholder="room name" autocomplete="off">
+            <button id="joinRoomBtn">join</button>
         </div>
     </div>
 
@@ -565,237 +429,98 @@
         return answer.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/\s/g, '');
     }
     
-    // ========== ONLINE USERS ==========
+    // Security Questions
+    const securityQuestions = [
+        "What is your mother's maiden name?",
+        "What was the name of your first pet?",
+        "What was your childhood nickname?",
+        "What is your favorite teacher's name?",
+        "What is your best friend's first name?",
+        "What was the name of your first school?",
+        "What is your father's middle name?",
+        "What city were you born in?"
+    ];
     
-    async function updateOnlineStatus() {
-        if (!currentRoom || !currentUsername || !database) return;
-        const userOnlineRef = ref(database, `rooms/${currentRoom}/online/${currentUsername}`);
-        await set(userOnlineRef, {
-            username: currentUsername,
-            lastSeen: serverTimestamp(),
-            lastSeenMs: Date.now()
-        });
-        onDisconnect(userOnlineRef).remove();
-    }
-    
-    window.showOnlineUsers = async function() {
-        if (!currentRoom) {
-            alert("Join a room first!");
-            return;
-        }
-        
-        const onlineRef = ref(database, `rooms/${currentRoom}/online`);
-        const snapshot = await get(onlineRef);
-        
-        const popup = document.createElement('div');
-        popup.className = 'online-popup';
-        
-        let onlineHtml = '<h3>👥 Online Users</h3>';
-        
-        if (snapshot.exists()) {
-            const users = snapshot.val();
-            const userList = Object.keys(users);
+    // ========== AUTH MODAL (Original Style) ==========
+    function showSecurityQuestionsModal() {
+        return new Promise((resolve) => {
+            const shuffled = [...securityQuestions];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            const selectedQuestions = shuffled.slice(0, 3);
             
-            if (userList.length === 0) {
-                onlineHtml += '<p style="color:#888">No one else is online</p>';
-            } else {
-                onlineHtml += '<div class="online-list">';
-                for (const user of userList) {
-                    onlineHtml += `
-                        <div class="online-item">
-                            <span class="status-dot"></span>
-                            🐔 ${escapeHtml(user)}
-                        </div>
-                    `;
-                }
-                onlineHtml += '</div>';
-                onlineHtml += `<p style="color:#6c86a3; font-size:0.7rem; margin-top:10px">${userList.length} user(s) online</p>`;
-            }
-        } else {
-            onlineHtml += '<p style="color:#888">No one else is online</p>';
-        }
-        
-        popup.innerHTML = onlineHtml + `<button class="close-popup">Close</button>`;
-        document.body.appendChild(popup);
-        
-        popup.querySelector('.close-popup').addEventListener('click', () => popup.remove());
-        popup.addEventListener('click', (e) => {
-            if (e.target === popup) popup.remove();
-        });
-    };
-    
-    // ========== MESSAGE STATUS ==========
-    
-    async function markMessageDelivered(messageId) {
-        if (!currentRoom || !currentUsername) return;
-        const deliveredRef = ref(database, `rooms/${currentRoom}/messages/${messageId}/delivered/${currentUsername}`);
-        await set(deliveredRef, serverTimestamp());
-    }
-    
-    async function markMessageSeen(messageId, sender) {
-        if (!currentRoom || !currentUsername || sender === currentUsername) return;
-        const seenRef = ref(database, `rooms/${currentRoom}/messages/${messageId}/seen/${currentUsername}`);
-        await set(seenRef, serverTimestamp());
-    }
-    
-    function getMessageStatus(message) {
-        const sender = message.sender;
-        
-        let othersSeenCount = 0;
-        if (message.seen) {
-            othersSeenCount = Object.keys(message.seen).filter(user => user !== sender).length;
-        }
-        
-        let othersDeliveredCount = 0;
-        if (message.delivered) {
-            othersDeliveredCount = Object.keys(message.delivered).filter(user => user !== sender).length;
-        }
-        
-        if (othersSeenCount > 0) {
-            return { icon: '✓✓', text: `Seen by ${othersSeenCount} other(s)`, color: '#ff99cc' };
-        } 
-        else if (othersDeliveredCount > 0) {
-            return { icon: '✓', text: `Delivered to ${othersDeliveredCount} other(s)`, color: '#888' };
-        }
-        return { icon: '○', text: 'Sent', color: '#888' };
-    }
-    
-    window.showInfoPopup = function(message) {
-        const popup = document.createElement('div');
-        popup.className = 'info-popup';
-        
-        let seenHtml = '<h3>📋 Message Info</h3>';
-        seenHtml += `<p style="color:#aaa; font-size:0.7rem">Message: ${escapeHtml(message.text || '')}</p>`;
-        seenHtml += `<p style="color:#aaa; font-size:0.7rem">Sent by: ${escapeHtml(message.sender)}</p>`;
-        
-        if (message.seen && Object.keys(message.seen).length > 0) {
-            const othersSeen = Object.keys(message.seen).filter(user => user !== message.sender);
-            if (othersSeen.length > 0) {
-                seenHtml += '<h4 style="margin-top:10px; color:#ff99cc">👁️ Seen by:</h4><div class="seen-list">';
-                for (const user of othersSeen) {
-                    const timestamp = message.seen[user];
-                    const date = new Date(timestamp);
-                    const timeStr = date.toLocaleString();
-                    seenHtml += `<div class="seen-item">🐔 ${escapeHtml(user)} - ${timeStr}</div>`;
-                }
-                seenHtml += '</div>';
-            } else {
-                seenHtml += '<p style="color:#888">Only the sender has seen this message</p>';
-            }
-        } else {
-            seenHtml += '<p style="color:#888">No one has seen this message yet</p>';
-        }
-        
-        popup.innerHTML = seenHtml + `<button class="close-popup">Close</button>`;
-        document.body.appendChild(popup);
-        
-        popup.querySelector('.close-popup').addEventListener('click', () => popup.remove());
-        popup.addEventListener('click', (e) => {
-            if (e.target === popup) popup.remove();
-        });
-    };
-    
-    // ========== AUTO-DELETE (PERSISTENT) ==========
-    
-    function getDeleteTimeMs(mode) {
-        switch(mode) {
-            case '1hour': return 60 * 60 * 1000;
-            case '24hour': return 24 * 60 * 60 * 1000;
-            case 'immediate': return 0;
-            default: return null;
-        }
-    }
-    
-    async function changeAutoDeleteMode() {
-        if (!currentRoom) {
-            alert("Join a room first!");
-            const select = document.getElementById('autoDeleteSelect');
-            select.value = autoDeleteMode;
-            return;
-        }
-        
-        const select = document.getElementById('autoDeleteSelect');
-        autoDeleteMode = select.value;
-        
-        // Save to Firebase so it persists after refresh
-        if (database && currentRoom) {
-            await set(ref(database, `rooms/${currentRoom}/settings/autoDelete`), autoDeleteMode);
-        }
-        
-        if (autoDeleteMode !== 'off') {
-            const timeMs = getDeleteTimeMs(autoDeleteMode);
-            if (timeMs === 0) {
-                const messagesRef = ref(database, `rooms/${currentRoom}/messages`);
-                await set(messagesRef, null);
-                addSystemMessage(`⚡ All messages cleared!`);
-            } else {
-                const hours = autoDeleteMode === '1hour' ? '1 hour' : '24 hours';
-                addSystemMessage(`🕐 Auto-delete enabled: messages older than ${hours} will be cleared.`);
-            }
-            startAutoDelete();
-        } else {
-            stopAutoDelete();
-            addSystemMessage(`🕐 Auto-delete disabled.`);
-        }
-    }
-    
-    async function startAutoDelete() {
-        stopAutoDelete();
-        if (autoDeleteMode === 'off') return;
-        
-        const deleteTimeMs = getDeleteTimeMs(autoDeleteMode);
-        if (deleteTimeMs === null) return;
-        
-        autoDeleteInterval = setInterval(async () => {
-            if (autoDeleteMode !== 'off' && currentRoom && database) {
-                const cutoffTime = Date.now() - deleteTimeMs;
-                const messagesRef = ref(database, `rooms/${currentRoom}/messages`);
-                const snapshot = await get(messagesRef);
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h2>🔐 Security Questions</h2>
+                    <div class="security-note">
+                        ⚠️ <strong>IMPORTANT RULES:</strong><br>
+                        • Use ONLY letters (A-Z) and numbers (0-9)<br>
+                        • NO spaces allowed<br>
+                        • Answers will be stored in CAPITAL LETTERS
+                    </div>
+                    <p>Please answer these 3 security questions:</p>
+                    <div id="questionsContainer"></div>
+                    <div id="securityError" class="auth-error"></div>
+                    <div class="auth-buttons">
+                        <button id="securitySubmitBtn" class="auth-btn auth-btn-primary">Submit & Continue</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            const container = modal.querySelector('#questionsContainer');
+            const errorDiv = modal.querySelector('#securityError');
+            const submitBtn = modal.querySelector('#securitySubmitBtn');
+            const answers = {};
+            
+            selectedQuestions.forEach((question, index) => {
+                const div = document.createElement('div');
+                div.style.marginBottom = '15px';
+                div.innerHTML = `
+                    <label style="color: #8db5e5; font-size: 0.75rem; display: block; margin-bottom: 5px;">${index + 1}. ${question}</label>
+                    <input type="text" id="answer_${index}" class="auth-input" placeholder="Your answer (A-Z, 0-9 only - NO spaces)">
+                `;
+                container.appendChild(div);
+                answers[question] = div.querySelector(`#answer_${index}`);
+            });
+            
+            const handleSubmit = () => {
+                const securityAnswers = {};
+                let valid = true;
                 
-                if (snapshot.exists()) {
-                    const messages = snapshot.val();
-                    let deletedCount = 0;
+                for (let i = 0; i < selectedQuestions.length; i++) {
+                    const question = selectedQuestions[i];
+                    const answer = answers[question].value.trim();
+                    const cleaned = cleanAnswer(answer);
                     
-                    for (const [msgId, msg] of Object.entries(messages)) {
-                        if (msg.timestampMs && msg.timestampMs < cutoffTime) {
-                            await remove(ref(database, `rooms/${currentRoom}/messages/${msgId}`));
-                            deletedCount++;
-                        }
+                    if (cleaned.length < 2) {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = `❌ Please answer question ${i + 1} (minimum 2 characters, no spaces)`;
+                        valid = false;
+                        return;
                     }
-                    
-                    if (deletedCount > 0) {
-                        addSystemMessage(`🧹 Auto-delete: ${deletedCount} old messages removed`);
-                    }
+                    securityAnswers[question] = cleaned;
                 }
-            }
-        }, 30 * 1000);
+                
+                if (valid) {
+                    modal.remove();
+                    resolve(securityAnswers);
+                }
+            };
+            
+            submitBtn.addEventListener('click', handleSubmit);
+            selectedQuestions.forEach((_, i) => {
+                answers[selectedQuestions[i]].addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') handleSubmit();
+                });
+            });
+        });
     }
     
-    function stopAutoDelete() {
-        if (autoDeleteInterval) {
-            clearInterval(autoDeleteInterval);
-            autoDeleteInterval = null;
-        }
-    }
-    
-    async function loadAutoDeleteSetting() {
-        if (!database || !currentRoom) return;
-        const settingRef = ref(database, `rooms/${currentRoom}/settings/autoDelete`);
-        const snapshot = await get(settingRef);
-        if (snapshot.exists()) {
-            autoDeleteMode = snapshot.val();
-            const select = document.getElementById('autoDeleteSelect');
-            select.value = autoDeleteMode;
-            if (autoDeleteMode !== 'off') startAutoDelete();
-        } else {
-            // Default to OFF if no setting saved
-            autoDeleteMode = "off";
-            const select = document.getElementById('autoDeleteSelect');
-            select.value = "off";
-        }
-    }
-    
-    // ========== AUTH SYSTEM ==========
     async function registerUser(username, password, securityAnswers) {
         if (!database) return { success: false, message: "Database not ready" };
         try {
@@ -831,20 +556,107 @@
         }
     }
     
-    async function setActiveSession(username) {
-        if (!database) return;
-        const sessionRef = ref(database, `active_sessions/${username}`);
-        await set(sessionRef, {
-            username: username,
-            loginTimeMs: Date.now(),
-            sessionId: Date.now() + '_' + Math.random().toString(36).substr(2, 6)
+    function showAuthModal() {
+        return new Promise((resolve) => {
+            let isLoginMode = true;
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h2 id="authTitle">🐔 Login to Hen's World</h2>
+                    <p id="authDesc">Enter your username and password</p>
+                    <input type="text" id="authUsername" class="auth-input" placeholder="Username" autocomplete="off">
+                    <input type="password" id="authPassword" class="auth-input" placeholder="Password" autocomplete="off">
+                    <div id="authError" class="auth-error"></div>
+                    <div class="auth-buttons">
+                        <button id="authSubmitBtn" class="auth-btn auth-btn-primary">Login</button>
+                    </div>
+                    <div class="auth-switch" id="authSwitch">Don't have an account? <span>Register</span></div>
+                    <div class="forgot-password" id="forgotPassword">🔑 Forgot password? <span>Reset here</span></div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            const usernameInput = modal.querySelector('#authUsername');
+            const passwordInput = modal.querySelector('#authPassword');
+            const errorDiv = modal.querySelector('#authError');
+            const submitBtn = modal.querySelector('#authSubmitBtn');
+            const authTitle = modal.querySelector('#authTitle');
+            const authDesc = modal.querySelector('#authDesc');
+            const authSwitch = modal.querySelector('#authSwitch');
+            const forgotPassword = modal.querySelector('#forgotPassword');
+            
+            setTimeout(() => usernameInput.focus(), 100);
+            
+            const updateMode = () => {
+                if (isLoginMode) {
+                    authTitle.innerHTML = '🐔 Login to Hen\'s World';
+                    authDesc.innerHTML = 'Enter your username and password';
+                    submitBtn.innerHTML = 'Login';
+                    authSwitch.innerHTML = 'Don\'t have an account? <span>Register</span>';
+                    forgotPassword.style.display = 'block';
+                } else {
+                    authTitle.innerHTML = '📝 Create Account';
+                    authDesc.innerHTML = 'Choose a username and password';
+                    submitBtn.innerHTML = 'Register';
+                    authSwitch.innerHTML = 'Already have an account? <span>Login</span>';
+                    forgotPassword.style.display = 'none';
+                }
+                errorDiv.style.display = 'none';
+                usernameInput.value = '';
+                passwordInput.value = '';
+            };
+            
+            authSwitch.addEventListener('click', () => {
+                isLoginMode = !isLoginMode;
+                updateMode();
+            });
+            
+            const handleSubmit = async () => {
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value;
+                if (username.length < 3) {
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerHTML = '❌ Username must be at least 3 characters';
+                    return;
+                }
+                if (password.length < 3) {
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerHTML = '❌ Password must be at least 3 characters';
+                    return;
+                }
+                errorDiv.style.display = 'block';
+                errorDiv.innerHTML = '⏳ Processing...';
+                errorDiv.style.color = '#fbbf24';
+                
+                if (isLoginMode) {
+                    const result = await loginUser(username, password);
+                    if (result.success) {
+                        modal.remove();
+                        resolve(username);
+                    } else {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = `❌ ${result.message}`;
+                        errorDiv.style.color = '#ff8888';
+                    }
+                } else {
+                    const securityAnswers = await showSecurityQuestionsModal();
+                    const result = await registerUser(username, password, securityAnswers);
+                    if (result.success) {
+                        modal.remove();
+                        resolve(username);
+                    } else {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = `❌ ${result.message}`;
+                        errorDiv.style.color = '#ff8888';
+                    }
+                }
+            };
+            
+            submitBtn.addEventListener('click', handleSubmit);
+            usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
+            passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
         });
-    }
-    
-    async function removeActiveSession(username) {
-        if (!database || !username) return;
-        const sessionRef = ref(database, `active_sessions/${username}`);
-        await set(sessionRef, null);
     }
     
     async function initAuth() {
@@ -855,64 +667,200 @@
                 const snapshot = await get(userRef);
                 if (snapshot.exists()) {
                     currentUsername = savedUsername;
-                    await setActiveSession(savedUsername);
                     document.getElementById("usernameDisplay").innerText = currentUsername;
                     return savedUsername;
                 }
             } catch (e) {}
         }
-        
-        const username = prompt("🐔 Welcome to Hen's World!\n\nEnter your username:");
-        const password = prompt("Enter your password (or create new account):");
-        
-        if (username && password) {
-            const result = await loginUser(username, password);
-            if (result.success) {
-                currentUsername = username;
-                localStorage.setItem("hensworld_username", username);
-                await setActiveSession(username);
-                document.getElementById("usernameDisplay").innerText = currentUsername;
-                return username;
-            } else {
-                const create = confirm("Account not found. Create new account?");
-                if (create) {
-                    const q1 = prompt("Security Question 1:\nWhat is your mother's maiden name?\n(Use only letters & numbers, NO spaces)");
-                    const q2 = prompt("Security Question 2:\nWhat was the name of your first pet?\n(Use only letters & numbers, NO spaces)");
-                    const q3 = prompt("Security Question 3:\nWhat city were you born in?\n(Use only letters & numbers, NO spaces)");
-                    
-                    const securityAnswers = {
-                        "What is your mother's maiden name?": cleanAnswer(q1),
-                        "What was the name of your first pet?": cleanAnswer(q2),
-                        "What city were you born in?": cleanAnswer(q3)
-                    };
-                    
-                    const regResult = await registerUser(username, password, securityAnswers);
-                    if (regResult.success) {
-                        currentUsername = username;
-                        localStorage.setItem("hensworld_username", username);
-                        await setActiveSession(username);
-                        document.getElementById("usernameDisplay").innerText = currentUsername;
-                        return username;
-                    } else {
-                        alert("Registration failed!");
-                    }
-                }
-            }
+        const username = await showAuthModal();
+        if (username) {
+            currentUsername = username;
+            localStorage.setItem("hensworld_username", username);
+            document.getElementById("usernameDisplay").innerText = currentUsername;
+            return username;
         }
         return null;
+    }
+    
+    // ========== ONLINE USERS ==========
+    async function updateOnlineStatus() {
+        if (!currentRoom || !currentUsername || !database) return;
+        const userOnlineRef = ref(database, `rooms/${currentRoom}/online/${currentUsername}`);
+        await set(userOnlineRef, {
+            username: currentUsername,
+            lastSeen: serverTimestamp(),
+            lastSeenMs: Date.now()
+        });
+        onDisconnect(userOnlineRef).remove();
+    }
+    
+    window.showOnlineUsers = async function() {
+        if (!currentRoom) {
+            alert("Join a room first!");
+            return;
+        }
+        const onlineRef = ref(database, `rooms/${currentRoom}/online`);
+        const snapshot = await get(onlineRef);
+        const popup = document.createElement('div');
+        popup.className = 'online-popup';
+        let onlineHtml = '<h3>👥 Online Users</h3>';
+        if (snapshot.exists()) {
+            const users = snapshot.val();
+            const userList = Object.keys(users);
+            if (userList.length === 0) {
+                onlineHtml += '<p style="color:#888">No one else is online</p>';
+            } else {
+                onlineHtml += '<div class="online-list">';
+                for (const user of userList) {
+                    onlineHtml += `<div class="online-item"><span class="status-dot"></span> 🐔 ${escapeHtml(user)}</div>`;
+                }
+                onlineHtml += '</div>';
+                onlineHtml += `<p style="color:#6c86a3; font-size:0.7rem; margin-top:10px">${userList.length} user(s) online</p>`;
+            }
+        } else {
+            onlineHtml += '<p style="color:#888">No one else is online</p>';
+        }
+        popup.innerHTML = onlineHtml + `<button class="close-popup">Close</button>`;
+        document.body.appendChild(popup);
+        popup.querySelector('.close-popup').addEventListener('click', () => popup.remove());
+        popup.addEventListener('click', (e) => { if (e.target === popup) popup.remove(); });
+    };
+    
+    // ========== MESSAGE STATUS ==========
+    async function markMessageDelivered(messageId) {
+        if (!currentRoom || !currentUsername) return;
+        const deliveredRef = ref(database, `rooms/${currentRoom}/messages/${messageId}/delivered/${currentUsername}`);
+        await set(deliveredRef, serverTimestamp());
+    }
+    
+    async function markMessageSeen(messageId, sender) {
+        if (!currentRoom || !currentUsername || sender === currentUsername) return;
+        const seenRef = ref(database, `rooms/${currentRoom}/messages/${messageId}/seen/${currentUsername}`);
+        await set(seenRef, serverTimestamp());
+    }
+    
+    function getMessageStatus(message) {
+        const sender = message.sender;
+        let othersSeenCount = message.seen ? Object.keys(message.seen).filter(user => user !== sender).length : 0;
+        let othersDeliveredCount = message.delivered ? Object.keys(message.delivered).filter(user => user !== sender).length : 0;
+        if (othersSeenCount > 0) return { icon: '✓✓', text: `Seen by ${othersSeenCount} other(s)`, color: '#ff99cc' };
+        if (othersDeliveredCount > 0) return { icon: '✓', text: `Delivered to ${othersDeliveredCount} other(s)`, color: '#888' };
+        return { icon: '○', text: 'Sent', color: '#888' };
+    }
+    
+    window.showInfoPopup = function(message) {
+        const popup = document.createElement('div');
+        popup.className = 'info-popup';
+        let seenHtml = '<h3>📋 Message Info</h3>';
+        seenHtml += `<p style="color:#aaa; font-size:0.7rem">Message: ${escapeHtml(message.text || '')}</p>`;
+        seenHtml += `<p style="color:#aaa; font-size:0.7rem">Sent by: ${escapeHtml(message.sender)}</p>`;
+        if (message.seen && Object.keys(message.seen).length > 0) {
+            const othersSeen = Object.keys(message.seen).filter(user => user !== message.sender);
+            if (othersSeen.length > 0) {
+                seenHtml += '<h4 style="margin-top:10px; color:#ff99cc">👁️ Seen by:</h4><div class="seen-list">';
+                for (const user of othersSeen) {
+                    const timestamp = message.seen[user];
+                    const date = new Date(timestamp);
+                    seenHtml += `<div class="seen-item">🐔 ${escapeHtml(user)} - ${date.toLocaleString()}</div>`;
+                }
+                seenHtml += '</div>';
+            } else {
+                seenHtml += '<p style="color:#888">Only the sender has seen this message</p>';
+            }
+        } else {
+            seenHtml += '<p style="color:#888">No one has seen this message yet</p>';
+        }
+        popup.innerHTML = seenHtml + `<button class="close-popup">Close</button>`;
+        document.body.appendChild(popup);
+        popup.querySelector('.close-popup').addEventListener('click', () => popup.remove());
+        popup.addEventListener('click', (e) => { if (e.target === popup) popup.remove(); });
+    };
+    
+    // ========== AUTO-DELETE ==========
+    function getDeleteTimeMs(mode) {
+        switch(mode) {
+            case '1hour': return 60 * 60 * 1000;
+            case '24hour': return 24 * 60 * 60 * 1000;
+            case 'immediate': return 0;
+            default: return null;
+        }
+    }
+    
+    async function changeAutoDeleteMode() {
+        if (!currentRoom) { alert("Join a room first!"); return; }
+        const select = document.getElementById('autoDeleteSelect');
+        autoDeleteMode = select.value;
+        await set(ref(database, `rooms/${currentRoom}/settings/autoDelete`), autoDeleteMode);
+        if (autoDeleteMode !== 'off') {
+            if (autoDeleteMode === 'immediate') {
+                await set(ref(database, `rooms/${currentRoom}/messages`), null);
+                addSystemMessage(`⚡ All messages cleared!`);
+            } else {
+                const hours = autoDeleteMode === '1hour' ? '1 hour' : '24 hours';
+                addSystemMessage(`🕐 Auto-delete: messages older than ${hours} will be cleared.`);
+            }
+            startAutoDelete();
+        } else {
+            stopAutoDelete();
+            addSystemMessage(`🕐 Auto-delete disabled.`);
+        }
+    }
+    
+    async function startAutoDelete() {
+        stopAutoDelete();
+        if (autoDeleteMode === 'off') return;
+        const deleteTimeMs = getDeleteTimeMs(autoDeleteMode);
+        if (deleteTimeMs === null) return;
+        autoDeleteInterval = setInterval(async () => {
+            if (autoDeleteMode !== 'off' && currentRoom && database) {
+                const cutoffTime = Date.now() - deleteTimeMs;
+                const messagesRef = ref(database, `rooms/${currentRoom}/messages`);
+                const snapshot = await get(messagesRef);
+                if (snapshot.exists()) {
+                    const messages = snapshot.val();
+                    let deletedCount = 0;
+                    for (const [msgId, msg] of Object.entries(messages)) {
+                        if (msg.timestampMs && msg.timestampMs < cutoffTime) {
+                            await remove(ref(database, `rooms/${currentRoom}/messages/${msgId}`));
+                            deletedCount++;
+                        }
+                    }
+                    if (deletedCount > 0) addSystemMessage(`🧹 Auto-delete: ${deletedCount} old messages removed`);
+                }
+            }
+        }, 30 * 1000);
+    }
+    
+    function stopAutoDelete() {
+        if (autoDeleteInterval) { clearInterval(autoDeleteInterval); autoDeleteInterval = null; }
+    }
+    
+    async function loadAutoDeleteSetting() {
+        if (!database || !currentRoom) return;
+        const settingRef = ref(database, `rooms/${currentRoom}/settings/autoDelete`);
+        const snapshot = await get(settingRef);
+        if (snapshot.exists()) {
+            autoDeleteMode = snapshot.val();
+            document.getElementById('autoDeleteSelect').value = autoDeleteMode;
+            if (autoDeleteMode !== 'off') startAutoDelete();
+        }
+    }
+    
+    async function setActiveSession(username) {
+        if (!database) return;
+        await set(ref(database, `active_sessions/${username}`), { username, loginTimeMs: Date.now(), sessionId: Date.now() + '_' + Math.random().toString(36).substr(2, 6) });
+    }
+    
+    async function removeActiveSession(username) {
+        if (!database || !username) return;
+        await set(ref(database, `active_sessions/${username}`), null);
     }
     
     window.logout = async function() {
         if (currentUsername) {
             await removeActiveSession(currentUsername);
-            if (currentRoom && database) {
-                const userOnlineRef = ref(database, `rooms/${currentRoom}/online/${currentUsername}`);
-                await set(userOnlineRef, null);
-            }
+            if (currentRoom && database) await set(ref(database, `rooms/${currentRoom}/online/${currentUsername}`), null);
             localStorage.removeItem("hensworld_username");
-            currentUsername = null;
-            currentRoom = null;
-            stopAutoDelete();
             location.reload();
         }
     };
@@ -924,10 +872,7 @@
             database = getDatabase(app);
             isFirebaseReady = true;
             return true;
-        } catch (error) {
-            console.error("Firebase init error:", error);
-            return false;
-        }
+        } catch (error) { return false; }
     }
     
     function joinRoom(roomId) {
@@ -935,214 +880,108 @@
         const cleanRoomId = roomId.trim().replace(/[.#$[\]]/g, '_');
         if (!cleanRoomId) return false;
         if (currentRoom === cleanRoomId) return true;
-        
         stopAutoDelete();
         if (messagesRef) messagesRef = null;
-        
-        if (currentRoom && currentUsername) {
-            const oldOnlineRef = ref(database, `rooms/${currentRoom}/online/${currentUsername}`);
-            set(oldOnlineRef, null);
-        }
-        
+        if (currentRoom && currentUsername) set(ref(database, `rooms/${currentRoom}/online/${currentUsername}`), null);
         currentRoom = cleanRoomId;
-        
-        const container = document.getElementById("messagesContainer");
-        container.innerHTML = '<div class="loading">🐔 loading messages...</div>';
-        
+        document.getElementById("messagesContainer").innerHTML = '<div class="loading">🐔 loading messages...</div>';
         messagesRef = ref(database, `rooms/${currentRoom}/messages`);
-        const messagesQuery = query(messagesRef, limitToLast(100));
-        
-        onChildAdded(messagesQuery, async (snapshot) => {
+        onChildAdded(query(messagesRef, limitToLast(100)), async (snapshot) => {
             const message = snapshot.val();
             if (message) {
-                const messageId = snapshot.key;
-                displayMessage(message, messageId);
-                if (message.sender !== currentUsername && !message.isSystem) {
-                    await markMessageSeen(messageId, message.sender);
-                }
+                displayMessage(message, snapshot.key);
+                if (message.sender !== currentUsername && !message.isSystem) await markMessageSeen(snapshot.key, message.sender);
             }
         });
-        
         onValue(messagesRef, (snapshot) => {
             const messages = snapshot.val();
-            if (messages) {
-                for (const [msgId, msg] of Object.entries(messages)) {
-                    const msgElement = document.getElementById(`msg-${msgId}`);
-                    if (msgElement && !msg.isSystem) {
-                        const statusSpan = msgElement.querySelector('.message-status');
-                        if (statusSpan) {
-                            const status = getMessageStatus(msg);
-                            statusSpan.innerHTML = `<span style="color: ${status.color}"> ${status.icon}</span>`;
-                            statusSpan.title = status.text;
-                        }
-                    }
+            if (messages) for (const [msgId, msg] of Object.entries(messages)) {
+                const el = document.getElementById(`msg-${msgId}`);
+                if (el && !msg.isSystem) {
+                    const status = getMessageStatus(msg);
+                    const span = el.querySelector('.message-status');
+                    if (span) span.innerHTML = `<span style="color: ${status.color}"> ${status.icon}</span>`;
                 }
             }
         });
-        
         updateOnlineStatus();
         setTimeout(() => addSystemMessage(`${currentUsername} joined the room`), 300);
         loadAutoDeleteSetting();
-        
-        // Enable message input
         document.getElementById("messageInput").disabled = false;
         document.getElementById("sendBtn").disabled = false;
-        
         return true;
     }
     
     async function sendMessage(text) {
         if (!text.trim()) return;
         if (!currentRoom) { alert("Join a room first!"); return; }
-        
-        const messageData = {
-            sender: currentUsername,
-            text: text.trim(),
-            timestamp: serverTimestamp(),
-            timestampMs: Date.now(),
-            delivered: {},
-            seen: {}
-        };
-        
+        const msgData = { sender: currentUsername, text: text.trim(), timestamp: serverTimestamp(), timestampMs: Date.now(), delivered: {}, seen: {} };
         try {
-            const newMsgRef = await push(ref(database, `rooms/${currentRoom}/messages`), messageData);
-            await markMessageDelivered(newMsgRef.key);
+            const refMsg = await push(ref(database, `rooms/${currentRoom}/messages`), msgData);
+            await markMessageDelivered(refMsg.key);
             document.getElementById("messageInput").value = "";
-        } catch (error) {
-            console.error("Send error:", error);
-            alert("Failed to send message");
-        }
+        } catch (error) { alert("Failed to send message"); }
     }
     
     async function addSystemMessage(text) {
         if (!currentRoom || !database) return;
-        const systemMsg = {
-            sender: "🐔 system",
-            text: text,
-            timestamp: serverTimestamp(),
-            timestampMs: Date.now(),
-            isSystem: true
-        };
-        await push(ref(database, `rooms/${currentRoom}/messages`), systemMsg);
+        await push(ref(database, `rooms/${currentRoom}/messages`), { sender: "🐔 system", text, timestamp: serverTimestamp(), timestampMs: Date.now(), isSystem: true });
     }
     
-    function escapeHtml(str) {
-        if (!str) return "";
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
+    function escapeHtml(str) { if (!str) return ""; const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
     
     function displayMessage(message, messageId) {
         const container = document.getElementById("messagesContainer");
         if (!container) return;
         if (container.children.length === 1 && container.children[0].classList?.contains('loading')) container.innerHTML = '';
-        
         const msgDiv = document.createElement("div");
         msgDiv.id = `msg-${messageId}`;
         msgDiv.className = "message";
-        
         const isOwn = (message.sender === currentUsername);
         const isSystem = message.isSystem === true;
-        
         if (!isSystem) msgDiv.classList.add(isOwn ? 'own-message' : '');
         if (isSystem) msgDiv.classList.add("system-message");
-        
-        let timeStr = "now";
-        if (message.timestampMs) {
-            const date = new Date(message.timestampMs);
-            timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        }
-        
+        let timeStr = message.timestampMs ? new Date(message.timestampMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "now";
         const status = getMessageStatus(message);
         const statusIcon = (isOwn && !isSystem) ? `<span style="color: ${status.color}"> ${status.icon}</span>` : '';
-        
         if (isSystem) {
-            msgDiv.innerHTML = `
-                <div class="message-content">
-                    <div class="message-bubble">🐔 ${escapeHtml(message.text)}</div>
-                </div>
-            `;
+            msgDiv.innerHTML = `<div class="message-content"><div class="message-bubble">🐔 ${escapeHtml(message.text)}</div></div>`;
         } else {
             msgDiv.innerHTML = `
-                <div class="message-header">
-                    <span class="message-sender">${escapeHtml(message.sender)}</span>
-                    <span class="message-time">${timeStr}</span>
-                    <span class="message-status" title="${status.text}">${statusIcon}</span>
-                </div>
-                <div class="message-content">
-                    <div class="message-bubble">${escapeHtml(message.text)}</div>
-                </div>
-                <div class="message-actions">
-                    <button class="action-btn info-btn">ℹ️ Info</button>
-                </div>
+                <div class="message-header"><span class="message-sender">${escapeHtml(message.sender)}</span><span class="message-time">${timeStr}</span><span class="message-status">${statusIcon}</span></div>
+                <div class="message-content"><div class="message-bubble">${escapeHtml(message.text)}</div></div>
+                <div class="message-actions"><button class="action-btn info-btn">ℹ️ Info</button></div>
             `;
-            
-            const infoBtn = msgDiv.querySelector('.info-btn');
-            if (infoBtn) {
-                infoBtn.addEventListener('click', () => {
-                    window.showInfoPopup(message);
-                });
-            }
+            msgDiv.querySelector('.info-btn').addEventListener('click', () => window.showInfoPopup(message));
         }
-        
         container.appendChild(msgDiv);
         container.scrollTop = container.scrollHeight;
     }
     
     function setupUI() {
-        const roomInput = document.getElementById("roomInput");
-        const joinBtn = document.getElementById("joinRoomBtn");
-        const sendBtn = document.getElementById("sendBtn");
-        const messageInput = document.getElementById("messageInput");
-        const logoutBtn = document.getElementById("logoutBtn");
-        const onlinePeopleBtn = document.getElementById("onlinePeopleBtn");
-        const autoDeleteSelect = document.getElementById("autoDeleteSelect");
-        
-        joinBtn.onclick = () => {
-            let roomVal = roomInput.value.trim();
-            if (!roomVal) roomVal = "lobby";
-            joinRoom(roomVal);
-        };
-        
-        sendBtn.onclick = () => sendMessage(messageInput.value);
-        
-        messageInput.onkeydown = (e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage(messageInput.value);
-            }
-        };
-        
-        logoutBtn.onclick = () => window.logout();
-        onlinePeopleBtn.onclick = () => window.showOnlineUsers();
-        autoDeleteSelect.onchange = () => changeAutoDeleteMode();
-        
-        roomInput.value = "lobby";
+        document.getElementById("joinRoomBtn").onclick = () => { let v = document.getElementById("roomInput").value.trim(); if (!v) v = "lobby"; joinRoom(v); };
+        document.getElementById("sendBtn").onclick = () => sendMessage(document.getElementById("messageInput").value);
+        document.getElementById("messageInput").onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(e.target.value); } };
+        document.getElementById("logoutBtn").onclick = () => window.logout();
+        document.getElementById("onlinePeopleBtn").onclick = () => window.showOnlineUsers();
+        document.getElementById("autoDeleteSelect").onchange = () => changeAutoDeleteMode();
+        document.getElementById("roomInput").value = "lobby";
         setTimeout(() => { if (isFirebaseReady && !currentRoom && currentUsername) joinRoom("lobby"); }, 800);
     }
     
     function addWatermark() {
-        const watermark = document.createElement('div');
-        watermark.style.cssText = `position:fixed; bottom:5px; left:5px; right:5px; font-size:8px; color:rgba(150,150,150,0.2); z-index:9998; pointer-events:none; text-align:center;`;
-        watermark.innerHTML = `${currentUsername} • ${new Date().toLocaleString()} • hensworld.chat`;
-        document.body.appendChild(watermark);
+        const wm = document.createElement('div');
+        wm.style.cssText = `position:fixed; bottom:5px; left:5px; right:5px; font-size:8px; color:rgba(150,150,150,0.2); z-index:9998; pointer-events:none; text-align:center;`;
+        wm.innerHTML = `${currentUsername} • ${new Date().toLocaleString()} • hensworld.chat`;
+        document.body.appendChild(wm);
     }
     
     document.addEventListener('contextmenu', (e) => e.preventDefault());
     window.addEventListener('blur', () => document.querySelector('.app')?.classList.add('screenshot-detected'));
     window.addEventListener('focus', () => setTimeout(() => document.querySelector('.app')?.classList.remove('screenshot-detected'), 300));
     
-    async function init() {
-        await initFirebase();
-        if (isFirebaseReady) {
-            await initAuth();
-            setupUI();
-            addWatermark();
-        }
-    }
-    
+    async function init() { await initFirebase(); if (isFirebaseReady) { await initAuth(); setupUI(); addWatermark(); } }
     init();
 </script>
 </body>
-    </html>
+                </html>
