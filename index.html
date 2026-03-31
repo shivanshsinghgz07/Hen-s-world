@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hen's World — Auto-Delete Timer + Security Reset</title>
+    <title>Hen's World — Persistent Auto-Delete + Hold for Info</title>
     <style>
         * {
             margin: 0;
@@ -83,7 +83,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: #b9d0f0;
         }
 
@@ -261,6 +261,7 @@
             border: 1px solid #282f39;
             position: relative;
             cursor: pointer;
+            transition: background 0.1s;
         }
 
         .message-text:active {
@@ -310,13 +311,6 @@
             color: #8e9eae;
         }
 
-        .info-badge {
-            font-size: 10px;
-            margin-left: 6px;
-            opacity: 0.5;
-            cursor: pointer;
-        }
-
         .input-area {
             padding: 1rem;
             background: #0b0e12;
@@ -360,6 +354,41 @@
         @keyframes fadeSlide {
             from { opacity: 0; transform: translateY(6px);}
             to { opacity: 1; transform: translateY(0);}
+        }
+
+        /* Action Menu for Hold */
+        .action-menu {
+            position: fixed;
+            background: #1e2329;
+            border-radius: 12px;
+            padding: 8px 0;
+            min-width: 120px;
+            z-index: 10001;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border: 1px solid #3a4a5a;
+            animation: fadeIn 0.1s ease;
+        }
+        
+        .action-menu button {
+            width: 100%;
+            background: transparent;
+            border: none;
+            padding: 10px 16px;
+            text-align: left;
+            color: #eef3ff;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.1s;
+            font-family: monospace;
+        }
+        
+        .action-menu button:hover {
+            background: #2e3a48;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
         }
 
         .modal {
@@ -412,10 +441,6 @@
             outline: none;
         }
         
-        .auth-input:focus {
-            border-color: #3e6b9e;
-        }
-        
         .auth-error {
             color: #ff8888;
             font-size: 0.75rem;
@@ -444,10 +469,6 @@
             background: #1e293b;
             color: #b9d0f0;
             border: 1px solid #2f3a48;
-        }
-        
-        .auth-btn-primary:hover {
-            background: #2e405b;
         }
         
         .auth-btn-secondary {
@@ -530,15 +551,6 @@
             padding: 20px;
             color: #6c7a89;
         }
-
-        .timer-countdown {
-            font-family: monospace;
-            font-size: 0.7rem;
-            background: #1e293b;
-            padding: 2px 8px;
-            border-radius: 20px;
-            color: #fbbf24;
-        }
     </style>
 </head>
 <body>
@@ -552,7 +564,7 @@
         </div>
         <div class="controls-group">
             <label class="toggle-switch">
-                <span>🔁 Auto: <span id="autoLabel">ON</span></span>
+                <span>🔁 AUTO DELETE MSG</span>
                 <input type="checkbox" id="autoDeleteToggle" checked>
             </label>
             <div id="timerDisplay" class="timer-badge">⏱️ 1h:00m</div>
@@ -608,9 +620,9 @@
     let isFirebaseReady = false;
     let autoDeleteEnabled = true;
     let messageElementsMap = new Map();
-    let deleteTimerInterval = null;
+    let deleteTimerTimeout = null;
     let countdownInterval = null;
-    let roomCreationTime = null;
+    let roomDeleteDeadline = null; // Store deadline timestamp
     
     // Security Questions
     const securityQuestions = [
@@ -638,7 +650,7 @@
         return hash.toString(16);
     }
     
-    // ========== SECURITY QUESTIONS MODAL (FOR REGISTRATION) ==========
+    // ========== SECURITY QUESTIONS MODAL ==========
     function showSecurityQuestionsModal(username) {
         return new Promise((resolve) => {
             const shuffled = [...securityQuestions];
@@ -654,15 +666,13 @@
                 <div class="modal-content">
                     <h2>🔐 Security Questions</h2>
                     <div class="security-note">
-                        ⚠️ <strong>IMPORTANT:</strong> Use ONLY letters (A-Z) and numbers (0-9). NO spaces or special characters.<br>
-                        Answers will be stored in CAPITAL LETTERS.
+                        ⚠️ <strong>IMPORTANT:</strong> Use ONLY letters (A-Z) and numbers (0-9). NO spaces.<br>
+                        Answers stored in CAPITAL LETTERS.
                     </div>
                     <p>Please answer these 3 security questions:</p>
                     <div id="questionsContainer"></div>
                     <div id="securityError" class="auth-error"></div>
-                    <div class="auth-buttons">
-                        <button id="securitySubmitBtn" class="auth-btn auth-btn-primary">Submit & Continue</button>
-                    </div>
+                    <button id="securitySubmitBtn" class="auth-btn auth-btn-primary">Submit</button>
                 </div>
             `;
             document.body.appendChild(modal);
@@ -677,77 +687,60 @@
                 div.style.marginBottom = '15px';
                 div.innerHTML = `
                     <label style="color: #8db5e5; font-size: 0.75rem; display: block; margin-bottom: 5px;">${index + 1}. ${question}</label>
-                    <input type="text" id="answer_${index}" class="auth-input" placeholder="Your answer (A-Z, 0-9 only)" style="margin-bottom: 5px;">
+                    <input type="text" id="answer_${index}" class="auth-input" placeholder="Your answer (A-Z, 0-9 only)">
                     <div id="error_${index}" class="answer-error"></div>
                 `;
                 container.appendChild(div);
                 answers[question] = div.querySelector(`#answer_${index}`);
                 const errorEl = div.querySelector(`#error_${index}`);
                 const input = answers[question];
-                
                 input.addEventListener('input', function() {
-                    const value = this.value;
-                    if (/\s/.test(value)) {
-                        errorEl.style.display = 'block';
-                        errorEl.innerHTML = '❌ SPACES NOT ALLOWED!';
-                    } else if (/[^A-Za-z0-9]/.test(value)) {
-                        errorEl.style.display = 'block';
-                        errorEl.innerHTML = '❌ Use ONLY letters and numbers!';
-                    } else {
-                        errorEl.style.display = 'none';
-                    }
+                    if (/\s/.test(this.value)) errorEl.innerHTML = '❌ SPACES NOT ALLOWED!';
+                    else if (/[^A-Za-z0-9]/.test(this.value)) errorEl.innerHTML = '❌ Only letters and numbers!';
+                    else errorEl.style.display = 'none';
                 });
             });
             
             submitBtn.onclick = () => {
                 const securityAnswers = {};
                 let valid = true;
-                
                 for (let i = 0; i < selectedQuestions.length; i++) {
                     const question = selectedQuestions[i];
                     const answer = answers[question].value;
                     const errorEl = document.getElementById(`error_${i}`);
-                    
                     if (!answer || answer.trim().length === 0) {
                         errorEl.style.display = 'block';
-                        errorEl.innerHTML = '❌ This field is required!';
+                        errorEl.innerHTML = '❌ Required!';
                         valid = false;
                     } else if (/\s/.test(answer)) {
                         errorEl.style.display = 'block';
-                        errorEl.innerHTML = '❌ SPACES NOT ALLOWED!';
+                        errorEl.innerHTML = '❌ No spaces!';
                         valid = false;
                     } else if (/[^A-Za-z0-9]/.test(answer)) {
                         errorEl.style.display = 'block';
-                        errorEl.innerHTML = '❌ Only letters and numbers allowed!';
+                        errorEl.innerHTML = '❌ Letters/numbers only!';
                         valid = false;
                     } else {
                         securityAnswers[question] = cleanAnswer(answer);
                     }
                 }
-                
-                if (valid) {
-                    modal.remove();
-                    resolve(securityAnswers);
-                } else {
-                    errorDiv.style.display = 'block';
-                    errorDiv.innerHTML = '❌ Please fix the errors above.';
-                }
+                if (valid) { modal.remove(); resolve(securityAnswers); }
+                else errorDiv.style.display = 'block';
             };
         });
     }
     
-    // ========== FORGOT PASSWORD WITH SECURITY QUESTIONS ==========
+    // ========== FORGOT PASSWORD ==========
     async function showForgotPasswordModal() {
         return new Promise((resolve) => {
             let step = 1;
             let username = '';
             let userQuestions = {};
-            let userData = null;
             
             const modal = document.createElement('div');
             modal.className = 'modal';
             modal.innerHTML = `
-                <div class="modal-content" id="forgotModalContent">
+                <div class="modal-content">
                     <h2 id="forgotTitle">🔐 Reset Password</h2>
                     <div id="forgotBody"></div>
                     <div id="forgotError" class="auth-error"></div>
@@ -767,188 +760,83 @@
             
             async function loadStep() {
                 errorDiv.style.display = 'none';
-                
                 if (step === 1) {
                     titleEl.innerHTML = '🔐 Enter Username';
-                    bodyEl.innerHTML = `
-                        <p>Enter your username to reset password</p>
-                        <input type="text" id="resetUsername" class="auth-input" placeholder="Username" autocomplete="off">
-                    `;
+                    bodyEl.innerHTML = `<input type="text" id="resetUsername" class="auth-input" placeholder="Username">`;
                     setTimeout(() => document.getElementById('resetUsername')?.focus(), 100);
-                } 
-                else if (step === 2) {
-                    titleEl.innerHTML = '🔐 Answer Security Questions';
+                } else if (step === 2) {
                     const usernameInput = document.getElementById('resetUsername');
                     username = usernameInput?.value.trim();
-                    
-                    if (!username || username.length < 3) {
-                        errorDiv.style.display = 'block';
-                        errorDiv.innerHTML = '❌ Please enter a valid username';
-                        step = 1;
-                        loadStep();
-                        return;
-                    }
-                    
+                    if (!username) { step = 1; loadStep(); return; }
                     const userRef = ref(database, `users/${username}`);
                     const snapshot = await get(userRef);
-                    
                     if (!snapshot.exists()) {
                         errorDiv.style.display = 'block';
                         errorDiv.innerHTML = '❌ Username not found!';
-                        step = 1;
-                        loadStep();
-                        return;
+                        step = 1; loadStep(); return;
                     }
-                    
-                    userData = snapshot.val();
+                    const userData = snapshot.val();
                     if (!userData.securityQuestions) {
-                        errorDiv.style.display = 'block';
-                        errorDiv.innerHTML = '❌ No security questions found for this account';
-                        step = 1;
-                        loadStep();
-                        return;
+                        errorDiv.innerHTML = '❌ No security questions found';
+                        step = 1; loadStep(); return;
                     }
-                    
                     userQuestions = userData.securityQuestions;
                     const questions = Object.keys(userQuestions);
-                    
-                    let html = `<p>Answer these security questions to verify your identity:</p>
-                                <div class="security-note">⚠️ Use ONLY letters and numbers. NO spaces.</div>`;
-                    questions.forEach((question, index) => {
-                        html += `
-                            <div style="margin-bottom: 15px;">
-                                <label style="color: #8db5e5; font-size: 0.75rem; display: block; margin-bottom: 5px;">${index + 1}. ${question}</label>
-                                <input type="text" id="secAnswer_${index}" class="auth-input" placeholder="Your answer" style="margin-bottom: 5px;">
-                                <div id="secError_${index}" class="answer-error"></div>
-                            </div>
-                        `;
+                    let html = `<p>Answer security questions:</p><div class="security-note">⚠️ Letters/numbers only, no spaces.</div>`;
+                    questions.forEach((q, idx) => {
+                        html += `<div style="margin-bottom:15px;"><label style="color:#8db5e5;">${idx+1}. ${q}</label>
+                                <input type="text" id="secAns_${idx}" class="auth-input">
+                                <div id="secErr_${idx}" class="answer-error"></div></div>`;
                     });
                     bodyEl.innerHTML = html;
-                    
-                    questions.forEach((_, index) => {
-                        const input = document.getElementById(`secAnswer_${index}`);
-                        const errorEl = document.getElementById(`secError_${index}`);
-                        if (input) {
-                            input.addEventListener('input', function() {
-                                const value = this.value;
-                                if (/\s/.test(value)) {
-                                    errorEl.style.display = 'block';
-                                    errorEl.innerHTML = '❌ SPACES NOT ALLOWED!';
-                                } else if (/[^A-Za-z0-9]/.test(value)) {
-                                    errorEl.style.display = 'block';
-                                    errorEl.innerHTML = '❌ Only letters and numbers!';
-                                } else {
-                                    errorEl.style.display = 'none';
-                                }
-                            });
-                        }
-                    });
-                    setTimeout(() => document.getElementById('secAnswer_0')?.focus(), 100);
-                } 
-                else if (step === 3) {
+                    setTimeout(() => document.getElementById('secAns_0')?.focus(), 100);
+                } else if (step === 3) {
                     const questions = Object.keys(userQuestions);
                     let allCorrect = true;
-                    
                     for (let i = 0; i < questions.length; i++) {
-                        const question = questions[i];
-                        const inputAnswer = document.getElementById(`secAnswer_${i}`)?.value;
-                        const errorEl = document.getElementById(`secError_${i}`);
-                        
-                        if (!inputAnswer || inputAnswer.trim().length === 0) {
-                            if (errorEl) {
-                                errorEl.style.display = 'block';
-                                errorEl.innerHTML = '❌ Required!';
-                            }
+                        const answer = document.getElementById(`secAns_${i}`)?.value;
+                        const errorEl = document.getElementById(`secErr_${i}`);
+                        if (!answer || cleanAnswer(answer) !== userQuestions[questions[i]]) {
+                            if (errorEl) { errorEl.style.display = 'block'; errorEl.innerHTML = '❌ Incorrect!'; }
                             allCorrect = false;
-                            continue;
-                        }
-                        
-                        const cleanedAnswer = cleanAnswer(inputAnswer);
-                        if (cleanedAnswer !== userQuestions[question]) {
-                            if (errorEl) {
-                                errorEl.style.display = 'block';
-                                errorEl.innerHTML = '❌ Incorrect answer!';
-                            }
-                            allCorrect = false;
-                        } else if (errorEl) {
-                            errorEl.style.display = 'none';
                         }
                     }
-                    
                     if (!allCorrect) {
                         errorDiv.style.display = 'block';
-                        errorDiv.innerHTML = '❌ One or more answers are incorrect.';
-                        step = 2;
-                        loadStep();
-                        return;
+                        errorDiv.innerHTML = '❌ Incorrect answers. Try again.';
+                        step = 2; loadStep(); return;
                     }
-                    
-                    titleEl.innerHTML = '🔐 Set New Password';
-                    bodyEl.innerHTML = `
-                        <p>Enter your new password</p>
-                        <input type="password" id="newPassword" class="auth-input" placeholder="New Password (min 3 chars)">
-                        <input type="password" id="confirmPassword" class="auth-input" placeholder="Confirm New Password">
-                    `;
-                    setTimeout(() => document.getElementById('newPassword')?.focus(), 100);
+                    titleEl.innerHTML = '🔐 New Password';
+                    bodyEl.innerHTML = `<input type="password" id="newPass" class="auth-input" placeholder="New Password (min 3)">
+                                        <input type="password" id="confirmPass" class="auth-input" placeholder="Confirm">`;
+                    setTimeout(() => document.getElementById('newPass')?.focus(), 100);
                 }
             }
             
-            backBtn.onclick = () => {
-                if (step > 1) {
-                    step--;
-                    loadStep();
-                } else {
-                    modal.remove();
-                    resolve(false);
-                }
-            };
-            
+            backBtn.onclick = () => { if (step > 1) { step--; loadStep(); } else modal.remove(); };
             nextBtn.onclick = async () => {
-                if (step === 1) {
-                    step++;
-                    loadStep();
-                } 
-                else if (step === 2) {
-                    step++;
-                    loadStep();
-                }
+                if (step === 1) { step++; loadStep(); }
+                else if (step === 2) { step++; loadStep(); }
                 else if (step === 3) {
-                    const newPassword = document.getElementById('newPassword')?.value;
-                    const confirmPassword = document.getElementById('confirmPassword')?.value;
-                    
-                    if (!newPassword || newPassword.length < 3) {
+                    const newPass = document.getElementById('newPass')?.value;
+                    const confirm = document.getElementById('confirmPass')?.value;
+                    if (!newPass || newPass.length < 3) {
                         errorDiv.style.display = 'block';
-                        errorDiv.innerHTML = '❌ Password must be at least 3 characters';
+                        errorDiv.innerHTML = '❌ Password min 3 chars';
                         return;
                     }
-                    if (newPassword !== confirmPassword) {
+                    if (newPass !== confirm) {
                         errorDiv.style.display = 'block';
                         errorDiv.innerHTML = '❌ Passwords do not match';
                         return;
                     }
-                    
+                    await update(ref(database, `users/${username}`), { password: simpleHash(newPass), resetAt: Date.now() });
                     errorDiv.style.display = 'block';
-                    errorDiv.innerHTML = '⏳ Resetting password...';
-                    errorDiv.style.color = '#fbbf24';
-                    
-                    const hashedPassword = simpleHash(newPassword);
-                    const userRef = ref(database, `users/${username}`);
-                    await update(userRef, {
-                        password: hashedPassword,
-                        passwordResetAt: Date.now()
-                    });
-                    
-                    errorDiv.style.display = 'block';
-                    errorDiv.innerHTML = '✅ Password reset successful! You can now login.';
+                    errorDiv.innerHTML = '✅ Password reset! You can now login.';
                     errorDiv.style.color = '#10b981';
-                    
-                    setTimeout(() => {
-                        modal.remove();
-                        resolve(true);
-                    }, 2000);
+                    setTimeout(() => { modal.remove(); resolve(true); }, 1500);
                 }
             };
-            
             loadStep();
         });
     }
@@ -956,221 +844,166 @@
     // ========== AUTH ==========
     async function registerUser(username, password, securityAnswers) {
         const userRef = ref(database, `users/${username}`);
-        const snap = await get(userRef);
-        if (snap.exists()) return false;
-        await set(userRef, { 
-            username, 
-            password: simpleHash(password), 
-            securityQuestions: securityAnswers,
-            createdAt: Date.now()
-        });
+        if ((await get(userRef)).exists()) return false;
+        await set(userRef, { username, password: simpleHash(password), securityQuestions: securityAnswers, createdAt: Date.now() });
         return true;
     }
     
     async function loginUser(username, password) {
-        const userRef = ref(database, `users/${username}`);
-        const snap = await get(userRef);
+        const snap = await get(ref(database, `users/${username}`));
         if (!snap.exists()) return false;
-        const data = snap.val();
-        return data.password === simpleHash(password);
-    }
-    
-    async function setActiveSession(username) {
-        await set(ref(database, `active_sessions/${username}`), { username, loginTimeMs: Date.now() });
-    }
-    
-    async function removeActiveSession(username) {
-        await set(ref(database, `active_sessions/${username}`), null);
+        return snap.val().password === simpleHash(password);
     }
     
     function showAuthModal() {
         return new Promise((resolve) => {
-            let isLoginMode = true;
+            let isLogin = true;
             const modal = document.createElement('div');
             modal.className = 'modal';
             modal.innerHTML = `
                 <div class="modal-content">
-                    <h2 id="authTitle">🐔 Login to Hen's World</h2>
-                    <p id="authDesc">Enter your username and password</p>
-                    <input type="text" id="authUsername" class="auth-input" placeholder="Username">
-                    <input type="password" id="authPassword" class="auth-input" placeholder="Password">
+                    <h2 id="authTitle">🐔 Login</h2>
+                    <input type="text" id="authUser" class="auth-input" placeholder="Username">
+                    <input type="password" id="authPass" class="auth-input" placeholder="Password">
                     <div id="authError" class="auth-error"></div>
-                    <div class="auth-buttons">
-                        <button id="authSubmitBtn" class="auth-btn auth-btn-primary">Login</button>
-                    </div>
-                    <div class="auth-switch" id="authSwitch">Don't have an account? <span>Register</span></div>
-                    <div class="forgot-password" id="forgotPassword">🔑 Forgot password? <span>Reset here</span></div>
+                    <button id="authBtn" class="auth-btn auth-btn-primary">Login</button>
+                    <div class="auth-switch" id="switchMode">No account? <span>Register</span></div>
+                    <div class="forgot-password" id="forgotBtn">🔑 Forgot? <span>Reset</span></div>
                 </div>
             `;
             document.body.appendChild(modal);
+            const userInp = modal.querySelector('#authUser');
+            const passInp = modal.querySelector('#authPass');
+            const errDiv = modal.querySelector('#authError');
+            const authBtn = modal.querySelector('#authBtn');
+            const switchDiv = modal.querySelector('#switchMode');
+            const forgotBtn = modal.querySelector('#forgotBtn');
+            const title = modal.querySelector('#authTitle');
             
-            const usernameInput = modal.querySelector('#authUsername');
-            const passwordInput = modal.querySelector('#authPassword');
-            const errorDiv = modal.querySelector('#authError');
-            const submitBtn = modal.querySelector('#authSubmitBtn');
-            const authTitle = modal.querySelector('#authTitle');
-            const authDesc = modal.querySelector('#authDesc');
-            const authSwitch = modal.querySelector('#authSwitch');
-            const forgotPassword = modal.querySelector('#forgotPassword');
+            const update = () => {
+                if (isLogin) { title.innerHTML = '🐔 Login'; authBtn.innerHTML = 'Login'; switchDiv.innerHTML = 'No account? <span>Register</span>'; forgotBtn.style.display = 'block'; }
+                else { title.innerHTML = '📝 Register'; authBtn.innerHTML = 'Register'; switchDiv.innerHTML = 'Have account? <span>Login</span>'; forgotBtn.style.display = 'none'; }
+            };
+            switchDiv.onclick = () => { isLogin = !isLogin; update(); };
+            forgotBtn.onclick = async () => { modal.remove(); await showForgotPasswordModal(); showAuthModal().then(resolve); };
             
-            const updateMode = () => {
-                if (isLoginMode) {
-                    authTitle.innerHTML = '🐔 Login to Hen\'s World';
-                    authDesc.innerHTML = 'Enter your username and password';
-                    submitBtn.innerHTML = 'Login';
-                    authSwitch.innerHTML = 'Don\'t have an account? <span>Register</span>';
-                    forgotPassword.style.display = 'block';
+            authBtn.onclick = async () => {
+                const user = userInp.value.trim();
+                const pass = passInp.value;
+                if (user.length < 3 || pass.length < 3) { errDiv.innerHTML = '❌ Min 3 chars'; errDiv.style.display = 'block'; return; }
+                if (isLogin) {
+                    if (await loginUser(user, pass)) { modal.remove(); resolve(user); }
+                    else { errDiv.innerHTML = '❌ Invalid'; errDiv.style.display = 'block'; }
                 } else {
-                    authTitle.innerHTML = '📝 Create Account';
-                    authDesc.innerHTML = 'Choose a username and password';
-                    submitBtn.innerHTML = 'Register';
-                    authSwitch.innerHTML = 'Already have an account? <span>Login</span>';
-                    forgotPassword.style.display = 'none';
-                }
-                errorDiv.style.display = 'none';
-            };
-            
-            authSwitch.onclick = () => { isLoginMode = !isLoginMode; updateMode(); };
-            forgotPassword.onclick = async () => {
-                modal.remove();
-                await showForgotPasswordModal();
-                showAuthModal().then(resolve);
-            };
-            
-            const handleSubmit = async () => {
-                const username = usernameInput.value.trim();
-                const password = passwordInput.value;
-                if (username.length < 3 || password.length < 3) {
-                    errorDiv.style.display = 'block';
-                    errorDiv.innerHTML = '❌ Username/password must be at least 3 characters';
-                    return;
-                }
-                errorDiv.style.display = 'block';
-                errorDiv.innerHTML = '⏳ Processing...';
-                errorDiv.style.color = '#fbbf24';
-                
-                if (isLoginMode) {
-                    const success = await loginUser(username, password);
-                    if (success) {
-                        await setActiveSession(username);
-                        modal.remove();
-                        resolve(username);
-                    } else {
-                        errorDiv.innerHTML = '❌ Invalid credentials';
-                        errorDiv.style.color = '#ff8888';
-                    }
-                } else {
-                    const securityAnswers = await showSecurityQuestionsModal(username);
-                    const success = await registerUser(username, password, securityAnswers);
-                    if (success) {
-                        await setActiveSession(username);
-                        modal.remove();
-                        resolve(username);
-                    } else {
-                        errorDiv.innerHTML = '❌ Username already exists!';
-                        errorDiv.style.color = '#ff8888';
-                    }
+                    const secAnswers = await showSecurityQuestionsModal(user);
+                    if (await registerUser(user, pass, secAnswers)) { modal.remove(); resolve(user); }
+                    else { errDiv.innerHTML = '❌ Username taken'; errDiv.style.display = 'block'; }
                 }
             };
-            
-            submitBtn.onclick = handleSubmit;
-            usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
-            passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
         });
     }
     
     async function initAuth() {
-        const saved = localStorage.getItem("hensworld_username");
-        if (saved) {
-            const snap = await get(ref(database, `users/${saved}`));
-            if (snap.exists()) {
-                currentUsername = saved;
-                await setActiveSession(saved);
-                return saved;
-            }
+        const saved = localStorage.getItem("hensworld_user");
+        if (saved && (await get(ref(database, `users/${saved}`))).exists()) {
+            currentUsername = saved;
+            return saved;
         }
-        const username = await showAuthModal();
-        if (username) {
-            currentUsername = username;
-            localStorage.setItem("hensworld_username", username);
-            return username;
-        }
+        const user = await showAuthModal();
+        if (user) { localStorage.setItem("hensworld_user", user); currentUsername = user; return user; }
         return null;
     }
     
-    async function logout() {
-        if (currentUsername) await removeActiveSession(currentUsername);
-        localStorage.removeItem("hensworld_username");
-        location.reload();
-    }
+    async function logout() { localStorage.removeItem("hensworld_user"); location.reload(); }
     
-    // ========== AUTO-DELETE WITH COUNTDOWN TIMER ==========
+    // ========== PERSISTENT AUTO-DELETE ==========
     async function deleteAllMessagesInRoom() {
-        if (!currentRoom || !database) return;
+        if (!currentRoom) return;
         const roomRef = ref(database, `rooms/${currentRoom}/messages`);
         const snapshot = await get(roomRef);
         if (snapshot.exists()) {
-            const messages = snapshot.val();
-            const deletePromises = [];
-            for (let msgId in messages) {
-                deletePromises.push(remove(ref(database, `rooms/${currentRoom}/messages/${msgId}`)));
+            for (let msgId in snapshot.val()) {
+                await remove(ref(database, `rooms/${currentRoom}/messages/${msgId}`));
             }
-            await Promise.all(deletePromises);
-            addSystemMessage("⏰ Auto-delete timer completed: All messages have been deleted.");
+            addSystemMessage("⏰ Auto-delete completed: All messages have been deleted.");
         }
     }
     
     function startDeleteTimer() {
-        if (deleteTimerInterval) clearInterval(deleteTimerInterval);
+        if (deleteTimerTimeout) clearTimeout(deleteTimerTimeout);
         if (countdownInterval) clearInterval(countdownInterval);
         
-        if (!autoDeleteEnabled) return;
+        if (!autoDeleteEnabled || !currentRoom) {
+            document.getElementById("timerDisplay").innerHTML = "⏱️ OFF";
+            return;
+        }
         
-        roomCreationTime = Date.now();
-        const timerDisplay = document.getElementById("timerDisplay");
+        // Load or initialize deadline
+        let deadline = localStorage.getItem(`delete_deadline_${currentRoom}`);
+        if (deadline) {
+            roomDeleteDeadline = parseInt(deadline);
+        } else {
+            roomDeleteDeadline = Date.now() + 3600000;
+            localStorage.setItem(`delete_deadline_${currentRoom}`, roomDeleteDeadline);
+        }
         
-        const updateTimer = () => {
-            if (!autoDeleteEnabled) return;
-            const elapsed = Date.now() - roomCreationTime;
-            const remaining = Math.max(0, 3600000 - elapsed);
-            if (remaining <= 0) {
-                if (deleteTimerInterval) clearInterval(deleteTimerInterval);
+        const now = Date.now();
+        const remaining = Math.max(0, roomDeleteDeadline - now);
+        
+        if (remaining <= 0) {
+            deleteAllMessagesInRoom();
+            localStorage.removeItem(`delete_deadline_${currentRoom}`);
+            roomDeleteDeadline = null;
+            document.getElementById("timerDisplay").innerHTML = "⏱️ Expired";
+            return;
+        }
+        
+        // Schedule deletion
+        deleteTimerTimeout = setTimeout(async () => {
+            if (autoDeleteEnabled && currentRoom) {
+                await deleteAllMessagesInRoom();
+                localStorage.removeItem(`delete_deadline_${currentRoom}`);
+                roomDeleteDeadline = null;
+            }
+        }, remaining);
+        
+        // Update countdown display
+        const updateDisplay = () => {
+            if (!autoDeleteEnabled || !roomDeleteDeadline) {
                 if (countdownInterval) clearInterval(countdownInterval);
-                deleteAllMessagesInRoom();
-                timerDisplay.innerHTML = "⏱️ Expired";
                 return;
             }
-            const hours = Math.floor(remaining / 3600000);
-            const minutes = Math.floor((remaining % 3600000) / 60000);
-            const seconds = Math.floor((remaining % 60000) / 1000);
-            if (hours > 0) {
-                timerDisplay.innerHTML = `⏱️ ${hours}h:${minutes.toString().padStart(2,'0')}m`;
-            } else {
-                timerDisplay.innerHTML = `⏱️ ${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+            const rem = Math.max(0, roomDeleteDeadline - Date.now());
+            if (rem <= 0) {
+                document.getElementById("timerDisplay").innerHTML = "⏱️ Expired";
+                if (countdownInterval) clearInterval(countdownInterval);
+                return;
             }
+            const hours = Math.floor(rem / 3600000);
+            const minutes = Math.floor((rem % 3600000) / 60000);
+            const seconds = Math.floor((rem % 60000) / 1000);
+            if (hours > 0) document.getElementById("timerDisplay").innerHTML = `⏱️ ${hours}h:${minutes.toString().padStart(2,'0')}m`;
+            else document.getElementById("timerDisplay").innerHTML = `⏱️ ${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
         };
-        
-        updateTimer();
-        countdownInterval = setInterval(updateTimer, 1000);
-        deleteTimerInterval = setTimeout(() => {
-            if (autoDeleteEnabled && currentRoom) {
-                deleteAllMessagesInRoom();
-            }
-        }, 3600000);
+        updateDisplay();
+        countdownInterval = setInterval(updateDisplay, 1000);
     }
     
-    function resetDeleteTimer() {
-        if (deleteTimerInterval) clearTimeout(deleteTimerInterval);
+    function resetDeleteTimerForRoom() {
+        if (!autoDeleteEnabled || !currentRoom) return;
+        // Reset deadline for current room
+        roomDeleteDeadline = Date.now() + 3600000;
+        localStorage.setItem(`delete_deadline_${currentRoom}`, roomDeleteDeadline);
+        if (deleteTimerTimeout) clearTimeout(deleteTimerTimeout);
         if (countdownInterval) clearInterval(countdownInterval);
-        if (autoDeleteEnabled) startDeleteTimer();
+        startDeleteTimer();
     }
     
-    // ========== READ RECEIPTS & DISPLAY ==========
+    // ========== READ RECEIPTS & INFO ==========
     async function markMessageAsSeen(messageId, senderId) {
         if (!currentUsername || senderId === currentUsername) return;
         const seenRef = ref(database, `rooms/${currentRoom}/messages/${messageId}/seenBy/${currentUsername}`);
-        const existing = await get(seenRef);
-        if (!existing.exists()) {
+        if (!(await get(seenRef)).exists()) {
             await set(seenRef, { username: currentUsername, seenAtMs: Date.now() });
         }
     }
@@ -1179,28 +1012,20 @@
         if (message.isSystem) return '';
         if (!message.seenBy) return '<span class="single-tick">✓</span>';
         const viewers = Object.keys(message.seenBy).filter(n => n !== message.sender);
-        if (viewers.length === 0) return '<span class="single-tick">✓</span>';
-        return '<span class="double-tick">✓✓</span>';
+        return viewers.length === 0 ? '<span class="single-tick">✓</span>' : '<span class="double-tick">✓✓</span>';
     }
     
     function showInfoPopup(messageId, messageData) {
         const modal = document.createElement('div');
         modal.className = 'modal';
         const seenEntries = messageData.seenBy ? Object.entries(messageData.seenBy) : [];
-        let listHtml = '';
         const filtered = seenEntries.filter(([name]) => name !== messageData.sender);
-        if (filtered.length === 0) {
-            listHtml = '<li style="color:#6c7a89;">No one has seen this message yet</li>';
-        } else {
-            filtered.forEach(([username, details]) => {
-                const time = details.seenAtMs ? new Date(details.seenAtMs).toLocaleString() : 'recently';
-                listHtml += `<li><strong>${escapeHtml(username)}</strong> · ${time}</li>`;
-            });
-        }
+        let listHtml = filtered.length === 0 ? '<li>No one has seen this message yet</li>' : 
+            filtered.map(([name, details]) => `<li><strong>${escapeHtml(name)}</strong> · ${new Date(details.seenAtMs).toLocaleString()}</li>`).join('');
         modal.innerHTML = `
             <div class="modal-content">
                 <h2>🔍 Message Info</h2>
-                <p style="color:#8db5e5;">"${escapeHtml(messageData.text || '')}"</p>
+                <p>"${escapeHtml(messageData.text || '')}"</p>
                 <div><strong>👁️ Seen by:</strong></div>
                 <ul class="seen-list">${listHtml}</ul>
                 <button class="close-modal">Close</button>
@@ -1210,9 +1035,29 @@
         modal.querySelector('.close-modal').onclick = () => modal.remove();
     }
     
-    function escapeHtml(str) {
-        if (!str) return "";
-        return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+    function escapeHtml(str) { return str?.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])) || ''; }
+    
+    // Hold menu for message info
+    let activeMenu = null;
+    function showMessageActionMenu(event, messageId, messageData) {
+        if (activeMenu) activeMenu.remove();
+        const menu = document.createElement('div');
+        menu.className = 'action-menu';
+        menu.innerHTML = `<button id="infoActionBtn">ℹ️ Message Info</button>`;
+        menu.style.left = `${event.clientX}px`;
+        menu.style.top = `${event.clientY}px`;
+        document.body.appendChild(menu);
+        activeMenu = menu;
+        
+        const infoBtn = menu.querySelector('#infoActionBtn');
+        infoBtn.onclick = () => {
+            menu.remove();
+            activeMenu = null;
+            showInfoPopup(messageId, messageData);
+        };
+        
+        const removeMenu = () => { if (menu && menu.parentNode) menu.remove(); activeMenu = null; };
+        setTimeout(() => document.addEventListener('click', removeMenu, { once: true }), 10);
     }
     
     function displayMessage(message, messageId) {
@@ -1225,20 +1070,18 @@
         const msgDiv = document.createElement("div");
         msgDiv.className = `message ${isOwn ? 'own-message' : ''} ${isSystem ? 'system-message' : ''}`;
         
-        let timeStr = "now";
-        if (message.timestampMs) timeStr = new Date(message.timestampMs).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' });
+        let timeStr = message.timestampMs ? new Date(message.timestampMs).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : 'now';
         
         if (isSystem) {
-            msgDiv.innerHTML = `<div class="message-text">✨ ${escapeHtml(message.text || '')}</div>`;
+            msgDiv.innerHTML = `<div class="message-text">✨ ${escapeHtml(message.text)}</div>`;
         } else {
             msgDiv.innerHTML = `
                 <div class="message-header">
                     <span class="message-sender">${escapeHtml(message.sender)}</span>
                     <span class="message-time">${timeStr}</span>
                     <span class="read-status">${getReadReceiptHtml(message)}</span>
-                    <span class="info-badge">ℹ️</span>
                 </div>
-                <div class="message-text">${escapeHtml(message.text || '')}</div>
+                <div class="message-text">${escapeHtml(message.text)}</div>
             `;
         }
         
@@ -1247,22 +1090,30 @@
         
         if (!isSystem) {
             const textBubble = msgDiv.querySelector('.message-text');
-            const infoIcon = msgDiv.querySelector('.info-badge');
             let pressTimer;
-            const showInfo = () => showInfoPopup(messageId, message);
-            textBubble.addEventListener('mousedown', () => pressTimer = setTimeout(showInfo, 500));
-            textBubble.addEventListener('mouseup', () => clearTimeout(pressTimer));
-            textBubble.addEventListener('mouseleave', () => clearTimeout(pressTimer));
-            textBubble.addEventListener('touchstart', () => pressTimer = setTimeout(showInfo, 500));
-            textBubble.addEventListener('touchend', () => clearTimeout(pressTimer));
-            if (infoIcon) infoIcon.onclick = (e) => { e.stopPropagation(); showInfo(); };
             
+            const startHold = (e) => {
+                pressTimer = setTimeout(() => {
+                    showMessageActionMenu(e, messageId, message);
+                }, 500);
+                e.preventDefault();
+            };
+            const cancelHold = () => { if (pressTimer) clearTimeout(pressTimer); };
+            
+            textBubble.addEventListener('mousedown', startHold);
+            textBubble.addEventListener('mouseup', cancelHold);
+            textBubble.addEventListener('mouseleave', cancelHold);
+            textBubble.addEventListener('touchstart', startHold);
+            textBubble.addEventListener('touchend', cancelHold);
+            textBubble.addEventListener('touchcancel', cancelHold);
+            
+            // Mark as seen when visible
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting && message.sender !== currentUsername) {
                         markMessageAsSeen(messageId, message.sender);
                         observer.disconnect();
-                        setTimeout(() => updateReadReceiptUI(messageId), 500);
+                        setTimeout(() => updateReadReceiptUI(messageId), 300);
                     }
                 });
             }, { threshold: 0.3 });
@@ -1298,10 +1149,13 @@
         document.getElementById("currentRoomName").innerText = currentRoom;
         document.getElementById("messageInput").disabled = false;
         document.getElementById("sendBtn").disabled = false;
-        document.getElementById("messagesContainer").innerHTML = '<div class="loading">🐔 loading...</div>';
+        document.getElementById("messagesContainer").innerHTML = '<div class="loading">🐔 Loading...</div>';
         messageElementsMap.clear();
         
-        resetDeleteTimer();
+        // Reset timer for this room (load persisted deadline)
+        if (deleteTimerTimeout) clearTimeout(deleteTimerTimeout);
+        if (countdownInterval) clearInterval(countdownInterval);
+        startDeleteTimer();
         
         messagesRef = ref(database, `rooms/${currentRoom}/messages`);
         const messagesQuery = query(messagesRef, limitToLast(200));
@@ -1324,15 +1178,19 @@
     function setAutoDeleteMode(enabled) {
         autoDeleteEnabled = enabled;
         localStorage.setItem("autoDeletePref", enabled);
-        document.getElementById("autoLabel").innerText = enabled ? "ON" : "OFF";
+        document.getElementById("autoDeleteToggle").checked = enabled;
+        
         if (enabled && currentRoom) {
-            resetDeleteTimer();
-            addSystemMessage("Auto-delete ENABLED: All messages will be deleted in 1 hour.");
+            startDeleteTimer();
+            addSystemMessage("AUTO DELETE MSG ENABLED: All messages will be deleted in 1 hour.");
         } else if (!enabled && currentRoom) {
-            if (deleteTimerInterval) clearTimeout(deleteTimerInterval);
+            if (deleteTimerTimeout) clearTimeout(deleteTimerTimeout);
             if (countdownInterval) clearInterval(countdownInterval);
+            localStorage.removeItem(`delete_deadline_${currentRoom}`);
             document.getElementById("timerDisplay").innerHTML = "⏱️ OFF";
-            addSystemMessage("Auto-delete DISABLED: Messages will persist.");
+            addSystemMessage("AUTO DELETE MSG DISABLED: Messages will persist.");
+        } else if (!enabled) {
+            document.getElementById("timerDisplay").innerHTML = "⏱️ OFF";
         }
     }
     
@@ -1344,10 +1202,9 @@
         const logoutBtn = document.getElementById("logoutBtn");
         const toggleCheck = document.getElementById("autoDeleteToggle");
         
-        const saved = localStorage.getItem("autoDeletePref");
-        if (saved !== null) autoDeleteEnabled = saved === "true";
+        const savedPref = localStorage.getItem("autoDeletePref");
+        autoDeleteEnabled = savedPref !== null ? savedPref === "true" : true;
         toggleCheck.checked = autoDeleteEnabled;
-        document.getElementById("autoLabel").innerText = autoDeleteEnabled ? "ON" : "OFF";
         
         toggleCheck.onchange = (e) => setAutoDeleteMode(e.target.checked);
         joinBtn.onclick = () => joinRoom(roomInput.value.trim() || "henhouse-lounge");
