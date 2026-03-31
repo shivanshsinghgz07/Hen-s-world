@@ -115,6 +115,7 @@
         .user-bar-buttons {
             display: flex;
             gap: 8px;
+            align-items: center;
         }
 
         .online-btn {
@@ -133,27 +134,19 @@
             color: white;
         }
 
-        .auto-delete-toggle {
+        .auto-delete-select {
             background: #1e293b;
             border: 1px solid #2f3a48;
             border-radius: 40px;
-            padding: 4px 10px;
+            padding: 4px 8px;
             font-size: 0.65rem;
             cursor: pointer;
-            transition: 0.2s;
-            white-space: nowrap;
+            color: #b9d0f0;
+            font-family: monospace;
         }
         
-        .auto-delete-toggle.on {
-            background: #2d4a2d;
-            border-color: #6b8c6b;
-            color: #aaffaa;
-        }
-        
-        .auto-delete-toggle.off {
-            background: #4a2d2d;
-            border-color: #8c6b6b;
-            color: #ffaaaa;
+        .auto-delete-select:hover {
+            background: #2e405b;
         }
 
         .room-controls {
@@ -407,6 +400,13 @@
             background: #10b981;
             border-radius: 50%;
             display: inline-block;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+            100% { opacity: 0.5; transform: scale(1); }
         }
         
         .online-popup .close-popup {
@@ -419,6 +419,46 @@
             cursor: pointer;
             width: 100%;
             font-size: 0.7rem;
+        }
+
+        /* Beautiful System Message Styling */
+        .system-message {
+            align-items: center !important;
+        }
+        
+        .system-message .message-content {
+            justify-content: center !important;
+        }
+        
+        .system-message .message-bubble {
+            background: linear-gradient(135deg, #2a2f3a 0%, #1e2329 100%);
+            border: 1px solid #3e6b9e;
+            color: #b9d0f0;
+            font-style: normal;
+            font-size: 0.7rem;
+            text-align: center;
+            border-radius: 20px;
+            padding: 4px 16px;
+            max-width: 80%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .system-message .message-bubble::after {
+            content: "🐔";
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 10px;
+            opacity: 0.6;
+        }
+        
+        .system-message .message-header {
+            display: none;
+        }
+        
+        .system-message .message-sender {
+            display: none;
         }
 
         .message-bubble::after {
@@ -530,9 +570,17 @@
             .user-bar-buttons {
                 gap: 5px;
             }
-            .online-btn, .auto-delete-toggle {
+            .online-btn, .auto-delete-select {
                 padding: 3px 8px;
                 font-size: 0.6rem;
+            }
+            .system-message .message-bubble {
+                font-size: 0.6rem;
+                padding: 3px 12px 3px 28px;
+            }
+            .system-message .message-bubble::after {
+                font-size: 8px;
+                left: 6px;
             }
         }
 
@@ -541,18 +589,6 @@
             padding: 20px;
             color: #6c7a89;
             font-size: 0.8rem;
-        }
-        
-        .system-message .message-bubble {
-            background: #1a1f2a;
-            color: #a0b4d0;
-            font-style: italic;
-            border-color: #2d3543;
-            font-size: 0.75rem;
-        }
-        
-        .system-message .message-sender {
-            color: #8aa2c2;
         }
 
         /* Modal Styles */
@@ -727,7 +763,12 @@
         </div>
         <div class="user-bar-buttons">
             <button id="onlinePeopleBtn" class="online-btn">👥 Online</button>
-            <button id="autoDeleteToggle" class="auto-delete-toggle off">⏰ Auto: OFF</button>
+            <select id="autoDeleteSelect" class="auto-delete-select">
+                <option value="off">⏰ Auto: OFF</option>
+                <option value="1hour">⏰ 1 Hour</option>
+                <option value="24hour">⏰ 24 Hours</option>
+                <option value="immediate">⚡ Immediate</option>
+            </select>
         </div>
     </div>
 
@@ -773,9 +814,8 @@
     let currentRoom = null;
     let currentUsername = null;
     let isFirebaseReady = false;
-    let autoDeleteEnabled = false;
+    let autoDeleteMode = "off";
     let autoDeleteInterval = null;
-    let onlineUsersRef = null;
     
     function simpleHash(str) {
         let hash = 0;
@@ -941,37 +981,65 @@
     
     // ========== AUTO-DELETE FUNCTIONS ==========
     
-    async function toggleAutoDelete() {
+    function getDeleteTimeMs(mode) {
+        switch(mode) {
+            case '1hour': return 60 * 60 * 1000;
+            case '24hour': return 24 * 60 * 60 * 1000;
+            case 'immediate': return 0;
+            default: return null;
+        }
+    }
+    
+    async function changeAutoDeleteMode() {
         if (!currentRoom) {
             alert("Join a room first!");
+            const select = document.getElementById('autoDeleteSelect');
+            select.value = autoDeleteMode;
             return;
         }
         
-        autoDeleteEnabled = !autoDeleteEnabled;
-        const toggleBtn = document.getElementById('autoDeleteToggle');
+        const select = document.getElementById('autoDeleteSelect');
+        autoDeleteMode = select.value;
         
-        if (autoDeleteEnabled) {
-            toggleBtn.className = 'auto-delete-toggle on';
-            toggleBtn.innerHTML = '⏰ Auto: ON';
+        if (autoDeleteMode !== 'off') {
+            const timeMs = getDeleteTimeMs(autoDeleteMode);
+            if (timeMs === 0) {
+                // Immediate delete - clear all messages now
+                await clearAllMessages();
+                addSystemMessage(`⚡ Auto-delete: All messages cleared immediately!`);
+            } else {
+                const hours = autoDeleteMode === '1hour' ? '1 hour' : '24 hours';
+                addSystemMessage(`🕐 Auto-delete enabled! Messages older than ${hours} will be cleared.`);
+            }
             startAutoDelete();
-            addSystemMessage(`🕐 Auto-delete enabled!`);
         } else {
-            toggleBtn.className = 'auto-delete-toggle off';
-            toggleBtn.innerHTML = '⏰ Auto: OFF';
             stopAutoDelete();
             addSystemMessage(`🕐 Auto-delete disabled.`);
         }
         
         if (database && currentRoom) {
-            await set(ref(database, `rooms/${currentRoom}/settings/autoDelete`), autoDeleteEnabled);
+            await set(ref(database, `rooms/${currentRoom}/settings/autoDelete`), autoDeleteMode);
         }
+    }
+    
+    async function clearAllMessages() {
+        if (!currentRoom || !database) return;
+        const messagesRef = ref(database, `rooms/${currentRoom}/messages`);
+        await set(messagesRef, null);
+        addSystemMessage(`🧹 All messages have been cleared!`);
     }
     
     async function startAutoDelete() {
         stopAutoDelete();
+        
+        if (autoDeleteMode === 'off') return;
+        
+        const deleteTimeMs = getDeleteTimeMs(autoDeleteMode);
+        if (deleteTimeMs === null) return;
+        
         autoDeleteInterval = setInterval(async () => {
-            if (autoDeleteEnabled && currentRoom && database) {
-                const oneHourAgo = Date.now() - (60 * 60 * 1000);
+            if (autoDeleteMode !== 'off' && currentRoom && database) {
+                const cutoffTime = Date.now() - deleteTimeMs;
                 const messagesRef = ref(database, `rooms/${currentRoom}/messages`);
                 const snapshot = await get(messagesRef);
                 
@@ -980,7 +1048,7 @@
                     let deletedCount = 0;
                     
                     for (const [msgId, msg] of Object.entries(messages)) {
-                        if (msg.timestampMs && msg.timestampMs < oneHourAgo) {
+                        if (msg.timestampMs && msg.timestampMs < cutoffTime) {
                             await remove(ref(database, `rooms/${currentRoom}/messages/${msgId}`));
                             deletedCount++;
                         }
@@ -991,7 +1059,7 @@
                     }
                 }
             }
-        }, 60 * 1000);
+        }, 30 * 1000); // Check every 30 seconds
     }
     
     function stopAutoDelete() {
@@ -1006,15 +1074,11 @@
         const settingRef = ref(database, `rooms/${currentRoom}/settings/autoDelete`);
         const snapshot = await get(settingRef);
         if (snapshot.exists()) {
-            autoDeleteEnabled = snapshot.val();
-            const toggleBtn = document.getElementById('autoDeleteToggle');
-            if (autoDeleteEnabled) {
-                toggleBtn.className = 'auto-delete-toggle on';
-                toggleBtn.innerHTML = '⏰ Auto: ON';
+            autoDeleteMode = snapshot.val();
+            const select = document.getElementById('autoDeleteSelect');
+            select.value = autoDeleteMode;
+            if (autoDeleteMode !== 'off') {
                 startAutoDelete();
-            } else {
-                toggleBtn.className = 'auto-delete-toggle off';
-                toggleBtn.innerHTML = '⏰ Auto: OFF';
             }
         }
     }
@@ -1183,7 +1247,7 @@
                 const messageId = snapshot.key;
                 displayMessage(message, messageId);
                 
-                if (message.sender !== currentUsername) {
+                if (message.sender !== currentUsername && !message.isSystem) {
                     await markMessageSeen(messageId, message.sender);
                 }
             }
@@ -1208,7 +1272,7 @@
     
     function updateMessageStatus(messageId, message) {
         const msgElement = document.getElementById(`msg-${messageId}`);
-        if (msgElement) {
+        if (msgElement && !message.isSystem) {
             const statusSpan = msgElement.querySelector('.message-status');
             if (statusSpan) {
                 const status = getMessageStatus(message);
@@ -1281,35 +1345,45 @@
         }
         
         const status = getMessageStatus(message);
-        const statusIcon = isOwn ? `<span style="color: ${status.color}"> ${status.icon}</span>` : '';
+        const statusIcon = (isOwn && !isSystem) ? `<span style="color: ${status.color}"> ${status.icon}</span>` : '';
         
-        const senderDisplay = isSystem ? "🐔 system" : escapeHtml(message.sender);
+        const senderDisplay = isSystem ? "" : escapeHtml(message.sender);
         
-        msgDiv.innerHTML = `
-            <div class="message-header">
-                <span class="message-sender">${senderDisplay}</span>
-                <span class="message-time">${timeStr}</span>
-                <span class="message-status" title="${status.text}">${statusIcon}</span>
-            </div>
-            <div class="message-content">
-                <div class="message-bubble">${escapeHtml(message.text || '')}</div>
-            </div>
-            <div class="message-actions">
-                <button class="action-btn info-btn" data-message-id="${messageId}">ℹ️ Info</button>
-            </div>
-        `;
+        if (isSystem) {
+            msgDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="message-bubble">🐔 ${escapeHtml(message.text)}</div>
+                </div>
+            `;
+        } else {
+            msgDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="message-sender">${senderDisplay}</span>
+                    <span class="message-time">${timeStr}</span>
+                    <span class="message-status" title="${status.text}">${statusIcon}</span>
+                </div>
+                <div class="message-content">
+                    <div class="message-bubble">${escapeHtml(message.text || '')}</div>
+                </div>
+                <div class="message-actions">
+                    <button class="action-btn info-btn" data-message-id="${messageId}">ℹ️ Info</button>
+                </div>
+            `;
+        }
         
         container.appendChild(msgDiv);
         
-        const infoBtn = msgDiv.querySelector('.info-btn');
-        if (infoBtn) {
-            infoBtn.addEventListener('click', async () => {
-                const msgRef = ref(database, `rooms/${currentRoom}/messages/${messageId}`);
-                const snapshot = await get(msgRef);
-                if (snapshot.exists()) {
-                    showInfoPopup(snapshot.val());
-                }
-            });
+        if (!isSystem) {
+            const infoBtn = msgDiv.querySelector('.info-btn');
+            if (infoBtn) {
+                infoBtn.addEventListener('click', async () => {
+                    const msgRef = ref(database, `rooms/${currentRoom}/messages/${messageId}`);
+                    const snapshot = await get(msgRef);
+                    if (snapshot.exists()) {
+                        showInfoPopup(snapshot.val());
+                    }
+                });
+            }
         }
         
         container.scrollTop = container.scrollHeight;
@@ -1321,8 +1395,8 @@
         const sendBtn = document.getElementById("sendBtn");
         const messageInput = document.getElementById("messageInput");
         const logoutBtn = document.getElementById("logoutBtn");
-        const autoDeleteToggle = document.getElementById("autoDeleteToggle");
         const onlinePeopleBtn = document.getElementById("onlinePeopleBtn");
+        const autoDeleteSelect = document.getElementById("autoDeleteSelect");
         
         joinBtn.addEventListener("click", () => {
             let roomVal = roomInput.value.trim();
@@ -1339,8 +1413,8 @@
         });
         
         logoutBtn.addEventListener("click", logout);
-        autoDeleteToggle.addEventListener("click", toggleAutoDelete);
         onlinePeopleBtn.addEventListener("click", showOnlineUsers);
+        autoDeleteSelect.addEventListener("change", changeAutoDeleteMode);
         
         roomInput.value = "lobby";
         setTimeout(() => { if (isFirebaseReady && !currentRoom && currentUsername) joinRoom("lobby"); }, 800);
