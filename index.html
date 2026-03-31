@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hen's World — Persistent Auto-Delete + Hold for Info</title>
+    <title>Hen's World — Auto-Delete Timer + User Profile</title>
     <style>
         * {
             margin: 0;
@@ -129,6 +129,31 @@
             border: 1px solid #3a4a5a;
         }
 
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #1a1f2a;
+            padding: 4px 12px;
+            border-radius: 40px;
+            border: 1px solid #3a4a5a;
+        }
+
+        .user-avatar {
+            font-size: 1rem;
+        }
+
+        .username-display {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #93c5fd;
+            font-family: monospace;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
         .logout-btn {
             background: #2d1f1f;
             border: 1px solid #8b3a3a;
@@ -198,17 +223,14 @@
             background: #07090e;
             padding: 6px 14px;
             border-radius: 40px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .room-name-badge {
             color: #93c5fd;
             font-weight: 600;
-        }
-
-        .connection-status {
-            font-size: 0.7rem;
-            margin-top: 2px;
-            color: #5f7d9c;
         }
 
         .messages-container {
@@ -362,7 +384,7 @@
             background: #1e2329;
             border-radius: 12px;
             padding: 8px 0;
-            min-width: 120px;
+            min-width: 140px;
             z-index: 10001;
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
             border: 1px solid #3a4a5a;
@@ -568,6 +590,10 @@
                 <input type="checkbox" id="autoDeleteToggle" checked>
             </label>
             <div id="timerDisplay" class="timer-badge">⏱️ 1h:00m</div>
+            <div class="user-info">
+                <span class="user-avatar">🐔</span>
+                <span id="userNameDisplay" class="username-display">Loading...</span>
+            </div>
             <button id="logoutBtn" class="logout-btn">🚪 Logout</button>
         </div>
     </div>
@@ -582,7 +608,6 @@
         </div>
         <div class="room-status">
             🔒 <span id="currentRoomName" class="room-name-badge">—</span>
-            <div class="connection-status" id="connectionStatus">connecting...</div>
         </div>
     </div>
 
@@ -622,7 +647,7 @@
     let messageElementsMap = new Map();
     let deleteTimerTimeout = null;
     let countdownInterval = null;
-    let roomDeleteDeadline = null; // Store deadline timestamp
+    let roomDeleteDeadline = null;
     
     // Security Questions
     const securityQuestions = [
@@ -907,10 +932,16 @@
         const saved = localStorage.getItem("hensworld_user");
         if (saved && (await get(ref(database, `users/${saved}`))).exists()) {
             currentUsername = saved;
+            document.getElementById("userNameDisplay").innerText = currentUsername;
             return saved;
         }
         const user = await showAuthModal();
-        if (user) { localStorage.setItem("hensworld_user", user); currentUsername = user; return user; }
+        if (user) { 
+            localStorage.setItem("hensworld_user", user); 
+            currentUsername = user;
+            document.getElementById("userNameDisplay").innerText = currentUsername;
+            return user;
+        }
         return null;
     }
     
@@ -938,7 +969,6 @@
             return;
         }
         
-        // Load or initialize deadline
         let deadline = localStorage.getItem(`delete_deadline_${currentRoom}`);
         if (deadline) {
             roomDeleteDeadline = parseInt(deadline);
@@ -958,7 +988,6 @@
             return;
         }
         
-        // Schedule deletion
         deleteTimerTimeout = setTimeout(async () => {
             if (autoDeleteEnabled && currentRoom) {
                 await deleteAllMessagesInRoom();
@@ -967,7 +996,6 @@
             }
         }, remaining);
         
-        // Update countdown display
         const updateDisplay = () => {
             if (!autoDeleteEnabled || !roomDeleteDeadline) {
                 if (countdownInterval) clearInterval(countdownInterval);
@@ -979,24 +1007,12 @@
                 if (countdownInterval) clearInterval(countdownInterval);
                 return;
             }
-            const hours = Math.floor(rem / 3600000);
-            const minutes = Math.floor((rem % 3600000) / 60000);
+            const minutes = Math.floor(rem / 60000);
             const seconds = Math.floor((rem % 60000) / 1000);
-            if (hours > 0) document.getElementById("timerDisplay").innerHTML = `⏱️ ${hours}h:${minutes.toString().padStart(2,'0')}m`;
-            else document.getElementById("timerDisplay").innerHTML = `⏱️ ${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+            document.getElementById("timerDisplay").innerHTML = `⏱️ ${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
         };
         updateDisplay();
         countdownInterval = setInterval(updateDisplay, 1000);
-    }
-    
-    function resetDeleteTimerForRoom() {
-        if (!autoDeleteEnabled || !currentRoom) return;
-        // Reset deadline for current room
-        roomDeleteDeadline = Date.now() + 3600000;
-        localStorage.setItem(`delete_deadline_${currentRoom}`, roomDeleteDeadline);
-        if (deleteTimerTimeout) clearTimeout(deleteTimerTimeout);
-        if (countdownInterval) clearInterval(countdownInterval);
-        startDeleteTimer();
     }
     
     // ========== READ RECEIPTS & INFO ==========
@@ -1037,7 +1053,6 @@
     
     function escapeHtml(str) { return str?.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])) || ''; }
     
-    // Hold menu for message info
     let activeMenu = null;
     function showMessageActionMenu(event, messageId, messageData) {
         if (activeMenu) activeMenu.remove();
@@ -1107,7 +1122,6 @@
             textBubble.addEventListener('touchend', cancelHold);
             textBubble.addEventListener('touchcancel', cancelHold);
             
-            // Mark as seen when visible
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting && message.sender !== currentUsername) {
@@ -1152,7 +1166,6 @@
         document.getElementById("messagesContainer").innerHTML = '<div class="loading">🐔 Loading...</div>';
         messageElementsMap.clear();
         
-        // Reset timer for this room (load persisted deadline)
         if (deleteTimerTimeout) clearTimeout(deleteTimerTimeout);
         if (countdownInterval) clearInterval(countdownInterval);
         startDeleteTimer();
@@ -1219,7 +1232,6 @@
         app = initializeApp(firebaseConfig);
         database = getDatabase(app);
         isFirebaseReady = true;
-        document.getElementById("connectionStatus").innerHTML = "✅ Secure";
         await initAuth();
         setupUI();
     }
