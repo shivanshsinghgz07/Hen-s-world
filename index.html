@@ -79,54 +79,49 @@
             border: 1px solid #252b33;
         }
 
-        .toggle-switch {
+        /* Proper ON/OFF Switch */
+        .auto-delete-switch {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 0.7rem;
-            color: #b9d0f0;
+            gap: 10px;
+            background: #07090e;
+            padding: 4px;
+            border-radius: 40px;
+            border: 1px solid #2a2f36;
         }
-
-        .toggle-switch input {
-            width: 40px;
-            height: 22px;
-            appearance: none;
-            background: #2d2f36;
-            border-radius: 20px;
-            position: relative;
+        
+        .switch-option {
+            padding: 6px 14px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            border-radius: 30px;
             cursor: pointer;
             transition: 0.2s;
-            border: 1px solid #4a5568;
+            font-family: monospace;
+            color: #8e9eae;
+            background: transparent;
         }
-
-        .toggle-switch input:checked {
+        
+        .switch-option.active {
             background: #2e7d64;
+            color: white;
+            box-shadow: 0 2px 8px rgba(46,125,100,0.3);
         }
-
-        .toggle-switch input::before {
-            content: "";
-            width: 18px;
-            height: 18px;
-            background: white;
-            border-radius: 50%;
-            position: absolute;
-            top: 1px;
-            left: 2px;
-            transition: 0.2s;
-        }
-
-        .toggle-switch input:checked::before {
-            transform: translateX(18px);
+        
+        .switch-option.off.active {
+            background: #7a5a5a;
+            color: white;
         }
 
         .timer-badge {
             background: #1a1f2a;
-            padding: 4px 10px;
+            padding: 6px 12px;
             border-radius: 20px;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             font-family: monospace;
             color: #fbbf24;
             border: 1px solid #3a4a5a;
+            font-weight: bold;
         }
 
         .user-info {
@@ -164,25 +159,22 @@
             font-size: 0.75rem;
             cursor: pointer;
             transition: 0.2s;
+            font-weight: bold;
         }
 
         .logout-btn:hover {
             background: #4a2a2a;
+            transform: scale(0.98);
         }
 
         .room-controls {
             padding: 0.8rem 1.5rem;
             background: #0b0e12;
             border-bottom: 1px solid #1a1f26;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            align-items: center;
-            justify-content: space-between;
         }
 
         .room-input-group {
-            flex: 2;
+            width: 100%;
         }
 
         .room-label {
@@ -203,34 +195,25 @@
             flex: 1;
             background: transparent;
             border: none;
-            padding: 8px 14px;
+            padding: 10px 16px;
             color: #dfe6f0;
             font-family: monospace;
             outline: none;
+            font-size: 0.9rem;
         }
 
         .room-field button {
             background: #1e293b;
             border: none;
-            padding: 0 18px;
+            padding: 0 20px;
             color: #b9d0f0;
             cursor: pointer;
             font-weight: bold;
+            transition: 0.2s;
         }
-
-        .room-status {
-            font-size: 0.8rem;
-            background: #07090e;
-            padding: 6px 14px;
-            border-radius: 40px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .room-name-badge {
-            color: #93c5fd;
-            font-weight: 600;
+        
+        .room-field button:hover {
+            background: #2e405b;
         }
 
         .messages-container {
@@ -241,6 +224,7 @@
             flex-direction: column;
             gap: 12px;
             background: #0f1219;
+            min-height: 0;
         }
 
         .message {
@@ -356,21 +340,28 @@
             width: 100%;
             background: transparent;
             border: none;
-            padding: 8px 0;
+            padding: 10px 0;
             color: #edf4ff;
             font-family: monospace;
             outline: none;
             resize: none;
+            font-size: 0.9rem;
         }
 
         #sendBtn {
             background: #1f2a3c;
             border: none;
             border-radius: 40px;
-            padding: 0 24px;
+            padding: 0 28px;
             color: #c0dcff;
             cursor: pointer;
             font-weight: bold;
+            transition: 0.2s;
+        }
+        
+        #sendBtn:hover {
+            background: #2e405b;
+            transform: scale(0.98);
         }
 
         @keyframes fadeSlide {
@@ -493,6 +484,10 @@
             border: 1px solid #2f3a48;
         }
         
+        .auth-btn-primary:hover {
+            background: #2e405b;
+        }
+        
         .auth-btn-secondary {
             background: #2d1f1f;
             color: #ffaaaa;
@@ -585,10 +580,10 @@
             <div class="sub">secure · private · worldwide</div>
         </div>
         <div class="controls-group">
-            <label class="toggle-switch">
-                <span>🔁 AUTO DELETE MSG</span>
-                <input type="checkbox" id="autoDeleteToggle" checked>
-            </label>
+            <div class="auto-delete-switch">
+                <span id="switchOn" class="switch-option active">ON</span>
+                <span id="switchOff" class="switch-option">OFF</span>
+            </div>
             <div id="timerDisplay" class="timer-badge">⏱️ 1h:00m</div>
             <div class="user-info">
                 <span class="user-avatar">🐔</span>
@@ -605,9 +600,6 @@
                 <input type="text" id="roomInput" placeholder="e.g., henhouse-lounge" autocomplete="off">
                 <button id="joinRoomBtn">join</button>
             </div>
-        </div>
-        <div class="room-status">
-            🔒 <span id="currentRoomName" class="room-name-badge">—</span>
         </div>
     </div>
 
@@ -1160,7 +1152,6 @@
         const clean = roomId.trim().replace(/[.#$[\]]/g, '_');
         if (!clean) return false;
         currentRoom = clean;
-        document.getElementById("currentRoomName").innerText = currentRoom;
         document.getElementById("messageInput").disabled = false;
         document.getElementById("sendBtn").disabled = false;
         document.getElementById("messagesContainer").innerHTML = '<div class="loading">🐔 Loading...</div>';
@@ -1191,7 +1182,17 @@
     function setAutoDeleteMode(enabled) {
         autoDeleteEnabled = enabled;
         localStorage.setItem("autoDeletePref", enabled);
-        document.getElementById("autoDeleteToggle").checked = enabled;
+        
+        // Update switch UI
+        const onBtn = document.getElementById("switchOn");
+        const offBtn = document.getElementById("switchOff");
+        if (enabled) {
+            onBtn.classList.add("active");
+            offBtn.classList.remove("active");
+        } else {
+            offBtn.classList.add("active");
+            onBtn.classList.remove("active");
+        }
         
         if (enabled && currentRoom) {
             startDeleteTimer();
@@ -1213,13 +1214,24 @@
         const sendBtn = document.getElementById("sendBtn");
         const messageInput = document.getElementById("messageInput");
         const logoutBtn = document.getElementById("logoutBtn");
-        const toggleCheck = document.getElementById("autoDeleteToggle");
+        const switchOn = document.getElementById("switchOn");
+        const switchOff = document.getElementById("switchOff");
         
         const savedPref = localStorage.getItem("autoDeletePref");
         autoDeleteEnabled = savedPref !== null ? savedPref === "true" : true;
-        toggleCheck.checked = autoDeleteEnabled;
         
-        toggleCheck.onchange = (e) => setAutoDeleteMode(e.target.checked);
+        // Initialize switch UI
+        if (autoDeleteEnabled) {
+            switchOn.classList.add("active");
+            switchOff.classList.remove("active");
+        } else {
+            switchOff.classList.add("active");
+            switchOn.classList.remove("active");
+        }
+        
+        switchOn.onclick = () => setAutoDeleteMode(true);
+        switchOff.onclick = () => setAutoDeleteMode(false);
+        
         joinBtn.onclick = () => joinRoom(roomInput.value.trim() || "henhouse-lounge");
         sendBtn.onclick = () => sendMessage(messageInput.value);
         messageInput.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(messageInput.value); } });
@@ -1239,4 +1251,4 @@
     init();
 </script>
 </body>
-    </html>
+                </html>
