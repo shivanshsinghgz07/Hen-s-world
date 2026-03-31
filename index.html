@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hen's World — Auto-Delete + Read Receipts</title>
+    <title>Hen's World — Secure Chat with Auto-Delete</title>
     <style>
         * {
             margin: 0;
@@ -13,7 +13,7 @@
 
         body {
             background: #0a0c0f;
-            font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             height: 100vh;
             display: flex;
             justify-content: center;
@@ -55,11 +55,13 @@
             font-size: 0.7rem;
             color: #6c7a89;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         h1 {
             font-size: 1.5rem;
             color: #eef2ff;
+            font-weight: 600;
         }
 
         .sub {
@@ -86,8 +88,8 @@
         }
 
         .toggle-switch input {
-            width: 36px;
-            height: 20px;
+            width: 40px;
+            height: 22px;
             appearance: none;
             background: #2d2f36;
             border-radius: 20px;
@@ -103,8 +105,8 @@
 
         .toggle-switch input::before {
             content: "";
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             background: white;
             border-radius: 50%;
             position: absolute;
@@ -114,7 +116,7 @@
         }
 
         .toggle-switch input:checked::before {
-            transform: translateX(16px);
+            transform: translateX(18px);
         }
 
         .logout-btn {
@@ -126,6 +128,11 @@
             font-family: monospace;
             font-size: 0.75rem;
             cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #4a2a2a;
         }
 
         .room-controls {
@@ -141,6 +148,12 @@
 
         .room-input-group {
             flex: 2;
+        }
+
+        .room-label {
+            font-size: 0.7rem;
+            color: #7e8c9e;
+            margin-bottom: 4px;
         }
 
         .room-field {
@@ -167,6 +180,7 @@
             padding: 0 18px;
             color: #b9d0f0;
             cursor: pointer;
+            font-weight: bold;
         }
 
         .room-status {
@@ -174,6 +188,17 @@
             background: #07090e;
             padding: 6px 14px;
             border-radius: 40px;
+        }
+
+        .room-name-badge {
+            color: #93c5fd;
+            font-weight: 600;
+        }
+
+        .connection-status {
+            font-size: 0.7rem;
+            margin-top: 2px;
+            color: #5f7d9c;
         }
 
         .messages-container {
@@ -226,6 +251,11 @@
             border: 1px solid #282f39;
             position: relative;
             cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .message-text:active {
+            background: #2a2f3a;
         }
 
         .own-message {
@@ -241,6 +271,24 @@
             justify-content: flex-end;
         }
 
+        /* System message styling - like reference image (centered, subtle) */
+        .system-message {
+            align-items: center !important;
+        }
+        .system-message .message-text {
+            background: transparent !important;
+            border: none !important;
+            color: #6c7a89 !important;
+            font-size: 0.75rem !important;
+            padding: 4px 12px !important;
+            font-style: normal !important;
+            text-align: center;
+            max-width: 90%;
+        }
+        .system-message .message-header {
+            display: none;
+        }
+
         .read-status {
             font-size: 0.7rem;
             margin-left: 6px;
@@ -254,6 +302,17 @@
         }
         .single-tick {
             color: #8e9eae;
+        }
+
+        .info-badge {
+            font-size: 10px;
+            margin-left: 6px;
+            opacity: 0.5;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .info-badge:hover {
+            opacity: 1;
         }
 
         .input-area {
@@ -293,6 +352,11 @@
             padding: 0 24px;
             color: #c0dcff;
             cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        #sendBtn:hover {
+            background: #2e405b;
         }
 
         @keyframes fadeSlide {
@@ -300,6 +364,7 @@
             to { opacity: 1; transform: translateY(0);}
         }
 
+        /* Modal Styles - Restored from original */
         .modal {
             position: fixed;
             top: 0;
@@ -311,30 +376,134 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            animation: fadeIn 0.3s;
         }
-
+        
         .modal-content {
             background: #111417;
             border-radius: 24px;
-            padding: 24px;
+            padding: 30px;
             max-width: 450px;
             width: 90%;
             border: 1px solid #2a2f36;
-            max-height: 80vh;
-            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
         }
-
-        .modal-content h3 {
+        
+        .modal-content h2 {
             color: #eef2ff;
-            margin-bottom: 16px;
+            margin-bottom: 10px;
+            font-size: 1.5rem;
         }
-
+        
+        .modal-content p {
+            color: #6c86a3;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+        }
+        
+        .auth-input {
+            width: 100%;
+            background: #050709;
+            border: 1px solid #252b33;
+            border-radius: 40px;
+            padding: 12px 18px;
+            color: #dfe6f0;
+            font-family: monospace;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            outline: none;
+        }
+        
+        .auth-input:focus {
+            border-color: #3e6b9e;
+        }
+        
+        .auth-error {
+            color: #ff8888;
+            font-size: 0.75rem;
+            margin-bottom: 15px;
+            display: none;
+        }
+        
+        .auth-buttons {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .auth-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 40px;
+            border: none;
+            font-family: monospace;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        
+        .auth-btn-primary {
+            background: #1e293b;
+            color: #b9d0f0;
+            border: 1px solid #2f3a48;
+        }
+        
+        .auth-btn-primary:hover {
+            background: #2e405b;
+            color: white;
+        }
+        
+        .auth-btn-secondary {
+            background: #2d1f1f;
+            color: #ffaaaa;
+            border: 1px solid #8b3a3a;
+        }
+        
+        .auth-switch {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #6c86a3;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .auth-switch span {
+            color: #93c5fd;
+            text-decoration: underline;
+        }
+        
+        .forgot-password {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #6c86a3;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .forgot-password span {
+            color: #fbbf24;
+            text-decoration: underline;
+        }
+        
+        .security-note {
+            background: #1a1f2a;
+            border-left: 3px solid #fbbf24;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.7rem;
+            color: #fbbf24;
+        }
+        
         .seen-list {
             list-style: none;
             padding: 0;
+            margin: 12px 0;
+            max-height: 300px;
+            overflow-y: auto;
         }
         .seen-list li {
-            padding: 8px 0;
+            padding: 10px 0;
             border-bottom: 1px solid #252b33;
             color: #b9d0f0;
             font-size: 0.85rem;
@@ -342,28 +511,30 @@
         .close-modal {
             background: #2d3e5a;
             border: none;
-            padding: 8px 16px;
+            padding: 10px;
             border-radius: 40px;
             color: white;
             margin-top: 16px;
             cursor: pointer;
             width: 100%;
+            font-weight: bold;
         }
-        .system-message .message-text {
-            background: #1a1f2a;
-            color: #a0b4d0;
-            font-style: italic;
-        }
+        
         .loading {
             text-align: center;
             padding: 20px;
             color: #6c7a89;
         }
-        .info-badge {
-            font-size: 10px;
-            margin-left: 8px;
-            opacity: 0.6;
-            cursor: pointer;
+
+        .messages-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .messages-container::-webkit-scrollbar-track {
+            background: #0a0d12;
+        }
+        .messages-container::-webkit-scrollbar-thumb {
+            background: #2e3a48;
+            border-radius: 8px;
         }
     </style>
 </head>
@@ -372,13 +543,13 @@
 <div class="app">
     <div class="header">
         <div class="header-left">
-            <div class="badge">🐔 HEN'S WORLD • EPHEMERAL + READ RECEIPTS</div>
-            <h1>Secure Chat</h1>
-            <div class="sub">auto-delete | double blue ticks | message insights</div>
+            <div class="badge">🐔 SECURE MESSENGER · HEN'S WORLD</div>
+            <h1>Hen's World Chat</h1>
+            <div class="sub">secure · private · worldwide</div>
         </div>
         <div class="controls-group">
             <label class="toggle-switch">
-                <span>🔁 Auto-Delete (1h)</span>
+                <span>🔁 Auto: <span id="autoLabel">ON</span></span>
                 <input type="checkbox" id="autoDeleteToggle" checked>
             </label>
             <button id="logoutBtn" class="logout-btn">🚪 Logout</button>
@@ -387,25 +558,26 @@
 
     <div class="room-controls">
         <div class="room-input-group">
+            <div class="room-label">🔗 ROOM IDENTIFIER</div>
             <div class="room-field">
-                <input type="text" id="roomInput" placeholder="room id (e.g., hens-den)" autocomplete="off">
+                <input type="text" id="roomInput" placeholder="e.g., henhouse-lounge" autocomplete="off">
                 <button id="joinRoomBtn">join</button>
             </div>
         </div>
         <div class="room-status">
-            🌀 ROOM: <span id="currentRoomName">—</span>
-            <div id="connectionStatus" style="font-size:0.7rem;">connecting...</div>
+            🔒 <span id="currentRoomName" class="room-name-badge">—</span>
+            <div class="connection-status" id="connectionStatus">connecting...</div>
         </div>
     </div>
 
     <div class="messages-container" id="messagesContainer">
-        <div class="loading">✨ Join a room to start chatting. Auto-delete ON by default (1 hour).</div>
+        <div class="loading">✨ Welcome to Hen's World! Join a room to start chatting...</div>
     </div>
 
     <div class="input-area">
         <div class="message-form">
             <div class="message-input-wrapper">
-                <textarea id="messageInput" rows="1" placeholder="Type message... (Enter to send)" disabled></textarea>
+                <textarea id="messageInput" rows="1" placeholder="Type a message..." disabled></textarea>
             </div>
             <button id="sendBtn" disabled>➤ send</button>
         </div>
@@ -430,10 +602,10 @@
     let currentRoom = null;
     let currentUsername = null;
     let isFirebaseReady = false;
-    let autoDeleteEnabled = true;       // default ON
-    let messageElementsMap = new Map();  // messageId -> DOM element
+    let autoDeleteEnabled = true;
+    let messageElementsMap = new Map();
     
-    // ========== SIMPLE AUTH (preserved from original) ==========
+    // ========== SIMPLE HASH ==========
     function simpleHash(str) {
         let hash = 0;
         for (let i = 0; i < str.length; i++) {
@@ -443,11 +615,17 @@
         return hash.toString(16);
     }
     
+    // ========== AUTH SYSTEM (FULL RESTORED MODALS) ==========
     async function registerUser(username, password) {
         const userRef = ref(database, `users/${username}`);
         const snap = await get(userRef);
         if (snap.exists()) return false;
-        await set(userRef, { username, password: simpleHash(password), createdAt: serverTimestamp() });
+        await set(userRef, { 
+            username: username, 
+            password: simpleHash(password), 
+            createdAt: serverTimestamp(),
+            createdAtMs: Date.now()
+        });
         return true;
     }
     
@@ -460,75 +638,138 @@
     }
     
     async function setActiveSession(username) {
-        await set(ref(database, `active_sessions/${username}`), { username, loginTime: Date.now() });
+        await set(ref(database, `active_sessions/${username}`), { username, loginTimeMs: Date.now() });
     }
+    
     async function removeActiveSession(username) {
         await set(ref(database, `active_sessions/${username}`), null);
     }
     
     function showAuthModal() {
         return new Promise((resolve) => {
+            let isLoginMode = true;
             const modal = document.createElement('div');
             modal.className = 'modal';
             modal.innerHTML = `
                 <div class="modal-content">
-                    <h3>🐔 Login / Register</h3>
-                    <input type="text" id="authUser" class="auth-input" placeholder="Username (min 3)" style="width:100%; padding:10px; margin:8px 0; background:#050709; border:1px solid #252b33; color:white;">
-                    <input type="password" id="authPass" class="auth-input" placeholder="Password (min 3)" style="width:100%; padding:10px; margin:8px 0; background:#050709; border:1px solid #252b33; color:white;">
-                    <div id="authMsg" style="color:#ff8888; font-size:0.75rem; margin:5px 0;"></div>
-                    <button id="loginBtn" style="background:#1e293b; padding:8px; border-radius:40px; width:100%; margin-top:8px;">Login</button>
-                    <button id="registerBtn" style="background:#2d1f1f; padding:8px; border-radius:40px; width:100%; margin-top:8px;">Register</button>
+                    <h2 id="authTitle">🐔 Login to Hen's World</h2>
+                    <p id="authDesc">Enter your username and password</p>
+                    <input type="text" id="authUsername" class="auth-input" placeholder="Username" autocomplete="off">
+                    <input type="password" id="authPassword" class="auth-input" placeholder="Password" autocomplete="off">
+                    <div id="authError" class="auth-error"></div>
+                    <div class="auth-buttons">
+                        <button id="authSubmitBtn" class="auth-btn auth-btn-primary">Login</button>
+                    </div>
+                    <div class="auth-switch" id="authSwitch">Don't have an account? <span>Register</span></div>
+                    <div class="forgot-password" id="forgotPassword">🔑 Forgot password? <span>Contact support</span></div>
                 </div>
             `;
             document.body.appendChild(modal);
-            const userInp = modal.querySelector('#authUser');
-            const passInp = modal.querySelector('#authPass');
-            const msgDiv = modal.querySelector('#authMsg');
-            const loginBtn = modal.querySelector('#loginBtn');
-            const regBtn = modal.querySelector('#registerBtn');
             
-            const action = async (isLogin) => {
-                const user = userInp.value.trim();
-                const pass = passInp.value;
-                if (user.length < 3 || pass.length < 3) {
-                    msgDiv.innerText = "Username/password min 3 chars";
+            const usernameInput = modal.querySelector('#authUsername');
+            const passwordInput = modal.querySelector('#authPassword');
+            const errorDiv = modal.querySelector('#authError');
+            const submitBtn = modal.querySelector('#authSubmitBtn');
+            const authTitle = modal.querySelector('#authTitle');
+            const authDesc = modal.querySelector('#authDesc');
+            const authSwitch = modal.querySelector('#authSwitch');
+            const forgotPassword = modal.querySelector('#forgotPassword');
+            
+            setTimeout(() => usernameInput.focus(), 100);
+            
+            const updateMode = () => {
+                if (isLoginMode) {
+                    authTitle.innerHTML = '🐔 Login to Hen\'s World';
+                    authDesc.innerHTML = 'Enter your username and password';
+                    submitBtn.innerHTML = 'Login';
+                    authSwitch.innerHTML = 'Don\'t have an account? <span>Register</span>';
+                    forgotPassword.style.display = 'block';
+                } else {
+                    authTitle.innerHTML = '📝 Create Account';
+                    authDesc.innerHTML = 'Choose a username and password';
+                    submitBtn.innerHTML = 'Register';
+                    authSwitch.innerHTML = 'Already have an account? <span>Login</span>';
+                    forgotPassword.style.display = 'none';
+                }
+                errorDiv.style.display = 'none';
+                usernameInput.value = '';
+                passwordInput.value = '';
+            };
+            
+            authSwitch.addEventListener('click', () => {
+                isLoginMode = !isLoginMode;
+                updateMode();
+            });
+            
+            forgotPassword.addEventListener('click', () => {
+                alert("For password reset, please contact the administrator.");
+            });
+            
+            const handleSubmit = async () => {
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value;
+                
+                if (username.length < 3) {
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerHTML = '❌ Username must be at least 3 characters';
                     return;
                 }
-                if (isLogin) {
-                    const ok = await loginUser(user, pass);
-                    if (ok) {
-                        await setActiveSession(user);
+                if (password.length < 3) {
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerHTML = '❌ Password must be at least 3 characters';
+                    return;
+                }
+                
+                errorDiv.style.display = 'block';
+                errorDiv.innerHTML = '⏳ Processing...';
+                errorDiv.style.color = '#fbbf24';
+                
+                if (isLoginMode) {
+                    const success = await loginUser(username, password);
+                    if (success) {
+                        await setActiveSession(username);
                         modal.remove();
-                        resolve(user);
-                    } else msgDiv.innerText = "Invalid credentials";
+                        resolve(username);
+                    } else {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = '❌ Invalid username or password';
+                        errorDiv.style.color = '#ff8888';
+                    }
                 } else {
-                    const ok = await registerUser(user, pass);
-                    if (ok) {
-                        await setActiveSession(user);
+                    const success = await registerUser(username, password);
+                    if (success) {
+                        await setActiveSession(username);
                         modal.remove();
-                        resolve(user);
-                    } else msgDiv.innerText = "Username taken";
+                        resolve(username);
+                    } else {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = '❌ Username already exists!';
+                        errorDiv.style.color = '#ff8888';
+                    }
                 }
             };
-            loginBtn.onclick = () => action(true);
-            regBtn.onclick = () => action(false);
+            
+            submitBtn.addEventListener('click', handleSubmit);
+            usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
+            passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
         });
     }
     
     async function initAuth() {
-        const saved = localStorage.getItem("hensworld_user");
-        if (saved) {
-            const snap = await get(ref(database, `users/${saved}`));
+        const savedUsername = localStorage.getItem("hensworld_username");
+        if (savedUsername) {
+            const userRef = ref(database, `users/${savedUsername}`);
+            const snap = await get(userRef);
             if (snap.exists()) {
-                currentUsername = saved;
-                await setActiveSession(saved);
-                return saved;
+                currentUsername = savedUsername;
+                await setActiveSession(savedUsername);
+                return savedUsername;
             }
         }
         const username = await showAuthModal();
         if (username) {
             currentUsername = username;
-            localStorage.setItem("hensworld_user", username);
+            localStorage.setItem("hensworld_username", username);
             return username;
         }
         return null;
@@ -536,50 +777,44 @@
     
     async function logout() {
         if (currentUsername) await removeActiveSession(currentUsername);
-        localStorage.removeItem("hensworld_user");
+        localStorage.removeItem("hensworld_username");
         location.reload();
     }
     
-    // ========== AUTO-DELETE ENGINE ==========
-    // Deletes message after 1 hour from timestampMs if autoDeleteEnabled is ON
+    // ========== AUTO-DELETE ==========
     function scheduleAutoDelete(messageId, timestampMs) {
         if (!autoDeleteEnabled) return;
         const now = Date.now();
         const age = now - timestampMs;
-        const delay = Math.max(0, 3600000 - age); // 1 hour
+        const delay = Math.max(0, 3600000 - age);
         setTimeout(async () => {
-            if (!autoDeleteEnabled) return; // if toggled OFF later, skip deletion
+            if (!autoDeleteEnabled) return;
             if (!currentRoom || !messageId) return;
             const msgRef = ref(database, `rooms/${currentRoom}/messages/${messageId}`);
             const snap = await get(msgRef);
             if (snap.exists()) {
                 await remove(msgRef);
-                // system notification optional
             }
         }, delay);
     }
     
-    // ========== READ RECEIPTS (Double Blue Tick) ==========
-    // When a user views a message, we record "seenBy" object with username + timestamp
-    async function markMessageAsSeen(messageId, senderId, messageData) {
+    // ========== READ RECEIPTS ==========
+    async function markMessageAsSeen(messageId, senderId) {
         if (!currentUsername) return;
-        if (senderId === currentUsername) return; // don't mark own messages as seen by self
-        
+        if (senderId === currentUsername) return;
         const seenRef = ref(database, `rooms/${currentRoom}/messages/${messageId}/seenBy/${currentUsername}`);
         const existing = await get(seenRef);
         if (!existing.exists()) {
-            await set(seenRef, { username: currentUsername, seenAt: serverTimestamp(), seenAtMs: Date.now() });
+            await set(seenRef, { username: currentUsername, seenAtMs: Date.now() });
         }
     }
     
-    // Build read receipt display: single tick (✓) or double blue tick (✓✓)
     function getReadReceiptHtml(message) {
+        if (message.isSystem) return '';
         if (!message.seenBy) return '<span class="single-tick">✓</span>';
-        const viewers = Object.keys(message.seenBy);
-        const totalOthers = viewers.length;
-        if (totalOthers === 0) return '<span class="single-tick">✓</span>';
-        // Double blue tick when at least 1 other person seen (excluding sender)
-        return '<span class="double-tick" style="color:#34b7f1;">✓✓</span>';
+        const viewers = Object.keys(message.seenBy).filter(name => name !== message.sender);
+        if (viewers.length === 0) return '<span class="single-tick">✓</span>';
+        return '<span class="double-tick">✓✓</span>';
     }
     
     // ========== INFO POPUP (who & when seen) ==========
@@ -588,119 +823,29 @@
         modal.className = 'modal';
         const seenEntries = messageData.seenBy ? Object.entries(messageData.seenBy) : [];
         let listHtml = '';
-        if (seenEntries.length === 0) listHtml = '<li>No one has seen this message yet</li>';
-        else {
-            seenEntries.forEach(([username, details]) => {
-                const time = details.seenAtMs ? new Date(details.seenAtMs).toLocaleString() : 'recently';
-                listHtml += `<li><strong>${escapeHtml(username)}</strong> · seen at ${time}</li>`;
-            });
+        if (seenEntries.length === 0) {
+            listHtml = '<li style="color:#6c7a89;">No one has seen this message yet</li>';
+        } else {
+            const filtered = seenEntries.filter(([name]) => name !== messageData.sender);
+            if (filtered.length === 0) listHtml = '<li style="color:#6c7a89;">Only you have seen this (no other viewers)</li>';
+            else {
+                filtered.forEach(([username, details]) => {
+                    const time = details.seenAtMs ? new Date(details.seenAtMs).toLocaleString() : 'recently';
+                    listHtml += `<li><strong>${escapeHtml(username)}</strong> · ${time}</li>`;
+                });
+            }
         }
         modal.innerHTML = `
             <div class="modal-content">
-                <h3>🔍 Message Info</h3>
-                <p style="color:#8db5e5;">"${escapeHtml(messageData.text || '')}"</p>
-                <div style="margin: 12px 0;"><strong>👁️ Seen by:</strong></div>
+                <h2>🔍 Message Info</h2>
+                <p style="color:#8db5e5; word-break:break-all;">"${escapeHtml(messageData.text || '')}"</p>
+                <div style="margin: 12px 0; color:#b9d0f0;"><strong>👁️ Seen by:</strong></div>
                 <ul class="seen-list">${listHtml}</ul>
                 <button class="close-modal">Close</button>
             </div>
         `;
         document.body.appendChild(modal);
         modal.querySelector('.close-modal').onclick = () => modal.remove();
-    }
-    
-    // ========== DISPLAY MESSAGE WITH LONG PRESS / HOLD ==========
-    function displayMessage(message, messageId) {
-        const container = document.getElementById("messagesContainer");
-        if (!container) return;
-        if (container.children.length === 1 && container.children[0].classList?.contains('loading')) container.innerHTML = '';
-        
-        const isOwn = (message.sender === currentUsername);
-        const isSystem = message.isSystem === true;
-        const msgDiv = document.createElement("div");
-        msgDiv.className = `message ${isOwn ? 'own-message' : ''} ${isSystem ? 'system-message' : ''}`;
-        msgDiv.setAttribute('data-msg-id', messageId);
-        
-        let timeStr = "just now";
-        if (message.timestampMs) {
-            timeStr = new Date(message.timestampMs).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' });
-        }
-        const senderDisplay = isSystem ? "🐔 system" : escapeHtml(message.sender);
-        
-        // read receipt html (only for non-system)
-        let receiptHtml = '';
-        if (!isSystem && !isOwn) receiptHtml = `<span class="read-status">${getReadReceiptHtml(message)}</span>`;
-        if (!isSystem && isOwn) receiptHtml = `<span class="read-status">${getReadReceiptHtml(message)}</span>`;
-        
-        msgDiv.innerHTML = `
-            <div class="message-header">
-                <span class="message-sender">${senderDisplay}</span>
-                <span class="message-time">${timeStr}</span>
-                ${receiptHtml}
-                <span class="info-badge" style="font-size:9px; cursor:pointer;">ℹ️</span>
-            </div>
-            <div class="message-text">${escapeHtml(message.text || '')}</div>
-        `;
-        
-        container.appendChild(msgDiv);
-        container.scrollTop = container.scrollHeight;
-        
-        // Attach long-press / hold event for info popup
-        const textBubble = msgDiv.querySelector('.message-text');
-        const infoIcon = msgDiv.querySelector('.info-badge');
-        let pressTimer;
-        const showInfo = () => {
-            showInfoPopup(messageId, message);
-        };
-        const startPress = (e) => {
-            pressTimer = setTimeout(showInfo, 500);
-            e.preventDefault();
-        };
-        const cancelPress = () => {
-            if (pressTimer) clearTimeout(pressTimer);
-        };
-        textBubble.addEventListener('mousedown', startPress);
-        textBubble.addEventListener('mouseup', cancelPress);
-        textBubble.addEventListener('mouseleave', cancelPress);
-        textBubble.addEventListener('touchstart', startPress);
-        textBubble.addEventListener('touchend', cancelPress);
-        if (infoIcon) infoIcon.addEventListener('click', (e) => { e.stopPropagation(); showInfo(); });
-        
-        // Store mapping for later updates (read receipt update)
-        messageElementsMap.set(messageId, { div: msgDiv, message });
-        
-        // Auto mark as seen after display (when message enters viewport)
-        if (!isSystem && message.sender !== currentUsername) {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        markMessageAsSeen(messageId, message.sender, message);
-                        observer.disconnect();
-                        // Update read receipt UI after marking
-                        updateReadReceiptUI(messageId);
-                    }
-                });
-            }, { threshold: 0.5 });
-            observer.observe(msgDiv);
-        }
-    }
-    
-    function updateReadReceiptUI(messageId) {
-        const entry = messageElementsMap.get(messageId);
-        if (!entry) return;
-        const msgData = entry.message;
-        // re-fetch latest seenBy from database? we can update local message object if needed, but we can also query fresh
-        const msgRef = ref(database, `rooms/${currentRoom}/messages/${messageId}`);
-        get(msgRef).then(snap => {
-            if (snap.exists()) {
-                const fresh = snap.val();
-                const receiptSpan = entry.div.querySelector('.read-status');
-                if (receiptSpan && !fresh.isSystem) {
-                    const html = getReadReceiptHtml(fresh);
-                    receiptSpan.innerHTML = html;
-                    entry.message = fresh; // update cache
-                }
-            }
-        });
     }
     
     function escapeHtml(str) {
@@ -710,6 +855,114 @@
             if (m === '<') return '&lt;';
             if (m === '>') return '&gt;';
             return m;
+        });
+    }
+    
+    // ========== DISPLAY MESSAGE (with hold/tap for info) ==========
+    function displayMessage(message, messageId) {
+        const container = document.getElementById("messagesContainer");
+        if (!container) return;
+        if (container.children.length === 1 && container.children[0].classList?.contains('loading')) container.innerHTML = '';
+        
+        const isOwn = (message.sender === currentUsername);
+        const isSystem = message.isSystem === true || message.sender === "🐔 Hen's World";
+        const msgDiv = document.createElement("div");
+        msgDiv.className = `message ${isOwn ? 'own-message' : ''} ${isSystem ? 'system-message' : ''}`;
+        msgDiv.setAttribute('data-msg-id', messageId);
+        
+        let timeStr = "now";
+        if (message.timestampMs) {
+            timeStr = new Date(message.timestampMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        const senderDisplay = isSystem ? "" : escapeHtml(message.sender);
+        
+        let receiptHtml = '';
+        if (!isSystem) {
+            receiptHtml = `<span class="read-status">${getReadReceiptHtml(message)}</span>`;
+        }
+        
+        if (isSystem) {
+            msgDiv.innerHTML = `
+                <div class="message-text">✨ ${escapeHtml(message.text || '')}</div>
+            `;
+        } else {
+            msgDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="message-sender">${senderDisplay}</span>
+                    <span class="message-time">${timeStr}</span>
+                    ${receiptHtml}
+                    <span class="info-badge" title="Message info">ℹ️</span>
+                </div>
+                <div class="message-text">${escapeHtml(message.text || '')}</div>
+            `;
+        }
+        
+        container.appendChild(msgDiv);
+        container.scrollTop = container.scrollHeight;
+        
+        // Add info functionality for non-system messages
+        if (!isSystem) {
+            const textBubble = msgDiv.querySelector('.message-text');
+            const infoIcon = msgDiv.querySelector('.info-badge');
+            let pressTimer;
+            
+            const showInfo = () => {
+                showInfoPopup(messageId, message);
+            };
+            
+            const startPress = (e) => {
+                pressTimer = setTimeout(showInfo, 500);
+                e.preventDefault();
+            };
+            const cancelPress = () => {
+                if (pressTimer) clearTimeout(pressTimer);
+            };
+            
+            textBubble.addEventListener('mousedown', startPress);
+            textBubble.addEventListener('mouseup', cancelPress);
+            textBubble.addEventListener('mouseleave', cancelPress);
+            textBubble.addEventListener('touchstart', startPress);
+            textBubble.addEventListener('touchend', cancelPress);
+            
+            if (infoIcon) {
+                infoIcon.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showInfo();
+                });
+            }
+        }
+        
+        messageElementsMap.set(messageId, { div: msgDiv, message });
+        
+        // Auto mark as seen when message enters viewport
+        if (!isSystem && message.sender !== currentUsername) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        markMessageAsSeen(messageId, message.sender);
+                        observer.disconnect();
+                        updateReadReceiptUI(messageId);
+                    }
+                });
+            }, { threshold: 0.3 });
+            observer.observe(msgDiv);
+        }
+    }
+    
+    function updateReadReceiptUI(messageId) {
+        const entry = messageElementsMap.get(messageId);
+        if (!entry) return;
+        const msgRef = ref(database, `rooms/${currentRoom}/messages/${messageId}`);
+        get(msgRef).then(snap => {
+            if (snap.exists()) {
+                const fresh = snap.val();
+                const receiptSpan = entry.div.querySelector('.read-status');
+                if (receiptSpan && !fresh.isSystem) {
+                    receiptSpan.innerHTML = getReadReceiptHtml(fresh);
+                }
+                entry.message = fresh;
+            }
         });
     }
     
@@ -725,7 +978,7 @@
         await push(ref(database, `rooms/${currentRoom}/messages`), systemMsg);
     }
     
-    // ========== JOIN ROOM & LISTEN ==========
+    // ========== JOIN ROOM ==========
     function joinRoom(roomId) {
         if (!database || !isFirebaseReady) return false;
         const clean = roomId.trim().replace(/[.#$[\]]/g, '_');
@@ -746,20 +999,12 @@
             const msg = snapshot.val();
             const msgId = snapshot.key;
             if (msg) {
-                // ensure timestampMs for auto-delete
-                if (!msg.timestampMs && msg.timestamp) {
-                    // fallback
-                }
                 displayMessage(msg, msgId);
-                // schedule auto-delete if toggle on (and not system)
                 if (autoDeleteEnabled && !msg.isSystem && msg.timestampMs) {
                     scheduleAutoDelete(msgId, msg.timestampMs);
                 }
-                // Also watch for live updates on seenBy to refresh UI
                 const seenRef = ref(database, `rooms/${currentRoom}/messages/${msgId}/seenBy`);
-                onValue(seenRef, () => {
-                    updateReadReceiptUI(msgId);
-                });
+                onValue(seenRef, () => updateReadReceiptUI(msgId));
             }
         });
         setTimeout(() => addSystemMessage(`${currentUsername} joined the room`), 400);
@@ -774,21 +1019,18 @@
             text: text.trim(),
             timestamp: serverTimestamp(),
             timestampMs: Date.now(),
-            seenBy: {}  // initialize empty seen tracking
+            seenBy: {}
         };
-        try {
-            await push(ref(database, `rooms/${currentRoom}/messages`), messageData);
-            document.getElementById("messageInput").value = "";
-        } catch(e) { alert("Send failed"); }
+        await push(ref(database, `rooms/${currentRoom}/messages`), messageData);
+        document.getElementById("messageInput").value = "";
     }
     
-    // Toggle auto-delete: if user turns OFF, messages already scheduled won't be deleted (set flag)
     function setAutoDeleteMode(enabled) {
         autoDeleteEnabled = enabled;
         localStorage.setItem("autoDeletePref", enabled);
-        const statusMsg = enabled ? "Auto-delete ENABLED: all new messages will disappear after 1 hour" : "Auto-delete DISABLED: messages will persist";
-        if (currentRoom) addSystemMessage(statusMsg);
-        else console.log(statusMsg);
+        const label = document.getElementById("autoLabel");
+        if (label) label.innerText = enabled ? "ON" : "OFF";
+        if (currentRoom) addSystemMessage(`Auto-delete ${enabled ? "ENABLED ✓" : "DISABLED"} (messages will ${enabled ? "delete after 1h" : "persist"})`);
     }
     
     // ========== UI SETUP ==========
@@ -803,10 +1045,9 @@
         const savedPref = localStorage.getItem("autoDeletePref");
         if (savedPref !== null) autoDeleteEnabled = savedPref === "true";
         toggleCheck.checked = autoDeleteEnabled;
+        document.getElementById("autoLabel").innerText = autoDeleteEnabled ? "ON" : "OFF";
         
-        toggleCheck.addEventListener("change", (e) => {
-            setAutoDeleteMode(e.target.checked);
-        });
+        toggleCheck.addEventListener("change", (e) => setAutoDeleteMode(e.target.checked));
         
         joinBtn.addEventListener("click", () => {
             let roomVal = roomInput.value.trim();
@@ -825,26 +1066,15 @@
         if (currentUsername && isFirebaseReady) setTimeout(() => joinRoom("henhouse-lounge"), 600);
     }
     
-    function addWatermark() {
-        const wm = document.createElement('div');
-        wm.style.cssText = `position:fixed; bottom:5px; left:5px; font-size:8px; color:rgba(150,150,150,0.3); pointer-events:none;`;
-        wm.innerText = `${currentUsername} • hensworld.chat`;
-        document.body.appendChild(wm);
-    }
-    
-    document.addEventListener('contextmenu', (e) => e.preventDefault());
-    
     async function init() {
-        try {
-            app = initializeApp(firebaseConfig);
-            database = getDatabase(app);
-            isFirebaseReady = true;
-            document.getElementById("connectionStatus").innerHTML = "✅ secure";
-            await initAuth();
-            setupUI();
-            addWatermark();
-        } catch(e) { console.error(e); }
+        app = initializeApp(firebaseConfig);
+        database = getDatabase(app);
+        isFirebaseReady = true;
+        document.getElementById("connectionStatus").innerHTML = "✅ Secure connection ready";
+        await initAuth();
+        setupUI();
     }
+    
     init();
 </script>
 </body>
