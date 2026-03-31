@@ -16,7 +16,7 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             height: 100vh;
             display: flex;
-            justify-content: center;
+ justify-content: center;
             align-items: center;
             padding: 1rem;
             -webkit-touch-callout: none;
@@ -44,7 +44,7 @@
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 10px;
         }
 
         .header-left {
@@ -52,47 +52,62 @@
         }
 
         .badge {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: #6c7a89;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         h1 {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             color: #eef2ff;
             font-weight: 600;
         }
 
         .sub {
             color: #6c86a3;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
         }
 
         .controls-group {
             display: flex;
-            gap: 12px;
+            gap: 8px;
             align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* Compact Auto-Delete Switch */
+        .auto-delete-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             background: #0b0e12;
-            padding: 6px 14px;
+            padding: 4px 12px;
             border-radius: 40px;
             border: 1px solid #252b33;
         }
-
-        /* Proper ON/OFF Switch */
-        .auto-delete-switch {
+        
+        .auto-delete-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #b9d0f0;
+            font-family: monospace;
+            letter-spacing: 0.3px;
+        }
+        
+        .switch-container {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 4px;
             background: #07090e;
-            padding: 4px;
-            border-radius: 40px;
+            padding: 2px;
+            border-radius: 30px;
             border: 1px solid #2a2f36;
         }
         
         .switch-option {
-            padding: 6px 14px;
-            font-size: 0.7rem;
+            padding: 4px 12px;
+            font-size: 0.65rem;
             font-weight: bold;
             border-radius: 30px;
             cursor: pointer;
@@ -105,7 +120,7 @@
         .switch-option.active {
             background: #2e7d64;
             color: white;
-            box-shadow: 0 2px 8px rgba(46,125,100,0.3);
+            box-shadow: 0 1px 4px rgba(46,125,100,0.3);
         }
         
         .switch-option.off.active {
@@ -115,9 +130,9 @@
 
         .timer-badge {
             background: #1a1f2a;
-            padding: 6px 12px;
+            padding: 4px 10px;
             border-radius: 20px;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-family: monospace;
             color: #fbbf24;
             border: 1px solid #3a4a5a;
@@ -127,23 +142,23 @@
         .user-info {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             background: #1a1f2a;
-            padding: 4px 12px;
+            padding: 4px 10px;
             border-radius: 40px;
             border: 1px solid #3a4a5a;
         }
 
         .user-avatar {
-            font-size: 1rem;
+            font-size: 0.9rem;
         }
 
         .username-display {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 600;
             color: #93c5fd;
             font-family: monospace;
-            max-width: 120px;
+            max-width: 100px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -153,10 +168,10 @@
             background: #2d1f1f;
             border: 1px solid #8b3a3a;
             border-radius: 40px;
-            padding: 6px 16px;
+            padding: 4px 14px;
             color: #ffaaaa;
             font-family: monospace;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             cursor: pointer;
             transition: 0.2s;
             font-weight: bold;
@@ -369,7 +384,6 @@
             to { opacity: 1; transform: translateY(0);}
         }
 
-        /* Action Menu for Hold */
         .action-menu {
             position: fixed;
             background: #1e2329;
@@ -580,9 +594,12 @@
             <div class="sub">secure · private · worldwide</div>
         </div>
         <div class="controls-group">
-            <div class="auto-delete-switch">
-                <span id="switchOn" class="switch-option active">ON</span>
-                <span id="switchOff" class="switch-option">OFF</span>
+            <div class="auto-delete-wrapper">
+                <span class="auto-delete-label">🔁 AUTO DELETE MSG</span>
+                <div class="switch-container">
+                    <span id="switchOn" class="switch-option active">ON</span>
+                    <span id="switchOff" class="switch-option">OFF</span>
+                </div>
             </div>
             <div id="timerDisplay" class="timer-badge">⏱️ 1h:00m</div>
             <div class="user-info">
@@ -1183,7 +1200,6 @@
         autoDeleteEnabled = enabled;
         localStorage.setItem("autoDeletePref", enabled);
         
-        // Update switch UI
         const onBtn = document.getElementById("switchOn");
         const offBtn = document.getElementById("switchOff");
         if (enabled) {
@@ -1220,7 +1236,6 @@
         const savedPref = localStorage.getItem("autoDeletePref");
         autoDeleteEnabled = savedPref !== null ? savedPref === "true" : true;
         
-        // Initialize switch UI
         if (autoDeleteEnabled) {
             switchOn.classList.add("active");
             switchOff.classList.remove("active");
@@ -1251,4 +1266,4 @@
     init();
 </script>
 </body>
-                </html>
+    </html>
