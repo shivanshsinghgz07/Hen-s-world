@@ -204,13 +204,16 @@
 
         .message-bubble {
             background: #181e26;
-            padding: 6px 12px;
-            border-radius: 16px;
+            padding: 8px 14px;
+            border-radius: 18px;
             border-top-left-radius: 4px;
             max-width: 85%;
             word-wrap: break-word;
+            word-break: break-word;
+            white-space: normal;
             color: #eef3ff;
-            font-size: 0.85rem;
+            font-size: 0.95rem;
+            font-weight: 500;
             line-height: 1.4;
             border: 1px solid #282f39;
             position: relative;
@@ -224,7 +227,7 @@
             background: #1e2a3a;
             border-color: #2f4b6e;
             border-top-right-radius: 4px;
-            border-top-left-radius: 16px;
+            border-top-left-radius: 18px;
         }
         
         .own-message .message-content {
@@ -232,9 +235,9 @@
         }
 
         .message-header {
-            font-size: 0.65rem;
+            font-size: 0.7rem;
             color: #5f7f9e;
-            margin-bottom: 3px;
+            margin-bottom: 4px;
             display: flex;
             gap: 8px;
         }
@@ -245,12 +248,12 @@
         }
 
         .message-time {
-            font-size: 0.6rem;
+            font-size: 0.65rem;
             color: #4a5b72;
         }
 
         .message-status {
-            font-size: 0.65rem;
+            font-size: 0.7rem;
             margin-left: 3px;
         }
 
@@ -275,7 +278,7 @@
             border: none;
             color: #93c5fd;
             cursor: pointer;
-            font-size: 0.65rem;
+            font-size: 0.7rem;
             padding: 2px 5px;
         }
         
@@ -283,7 +286,7 @@
             color: white;
         }
 
-        /* System Message Style - Simple and Clean */
+        /* System Message Style */
         .system-message {
             align-items: center !important;
         }
@@ -297,10 +300,10 @@
             border: 1px solid #4a5b72;
             color: #a0b4d0;
             font-style: italic;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             text-align: center;
             border-radius: 20px;
-            padding: 4px 16px;
+            padding: 5px 18px;
             max-width: 80%;
         }
         
@@ -313,7 +316,7 @@
             position: absolute;
             bottom: 2px;
             right: 5px;
-            font-size: 7px;
+            font-size: 8px;
             color: rgba(255,255,255,0.15);
             pointer-events: none;
         }
@@ -348,7 +351,8 @@
             padding: 8px 0;
             color: #edf4ff;
             font-family: monospace;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
+            font-weight: 500;
             outline: none;
             resize: none;
         }
@@ -361,7 +365,7 @@
             color: #c0dcff;
             font-weight: bold;
             cursor: pointer;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             border: 1px solid #2f3a48;
         }
         #sendBtn:hover {
@@ -393,6 +397,7 @@
         @media (max-width: 550px) {
             .message-bubble {
                 max-width: 95%;
+                font-size: 0.9rem;
             }
             .user-bar-buttons {
                 gap: 5px;
@@ -690,7 +695,7 @@
         });
     };
     
-    // ========== AUTO-DELETE ==========
+    // ========== AUTO-DELETE (PERSISTENT) ==========
     
     function getDeleteTimeMs(mode) {
         switch(mode) {
@@ -712,6 +717,11 @@
         const select = document.getElementById('autoDeleteSelect');
         autoDeleteMode = select.value;
         
+        // Save to Firebase so it persists after refresh
+        if (database && currentRoom) {
+            await set(ref(database, `rooms/${currentRoom}/settings/autoDelete`), autoDeleteMode);
+        }
+        
         if (autoDeleteMode !== 'off') {
             const timeMs = getDeleteTimeMs(autoDeleteMode);
             if (timeMs === 0) {
@@ -726,10 +736,6 @@
         } else {
             stopAutoDelete();
             addSystemMessage(`🕐 Auto-delete disabled.`);
-        }
-        
-        if (database && currentRoom) {
-            await set(ref(database, `rooms/${currentRoom}/settings/autoDelete`), autoDeleteMode);
         }
     }
     
@@ -781,6 +787,11 @@
             const select = document.getElementById('autoDeleteSelect');
             select.value = autoDeleteMode;
             if (autoDeleteMode !== 'off') startAutoDelete();
+        } else {
+            // Default to OFF if no setting saved
+            autoDeleteMode = "off";
+            const select = document.getElementById('autoDeleteSelect');
+            select.value = "off";
         }
     }
     
@@ -998,6 +1009,7 @@
             await markMessageDelivered(newMsgRef.key);
             document.getElementById("messageInput").value = "";
         } catch (error) {
+            console.error("Send error:", error);
             alert("Failed to send message");
         }
     }
