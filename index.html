@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hen's World — Chat</title>
+    <title>Hen's World — Full Chat</title>
     <style>
         * {
             margin: 0;
@@ -34,6 +34,7 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.5);
         }
 
+        /* Header */
         .header {
             padding: 0.8rem 1.2rem;
             border-bottom: 1px solid #1e2329;
@@ -57,6 +58,7 @@
         }
         .logout-btn:hover { background: #4a2a2a; }
 
+        /* User bar */
         .user-bar {
             background: #0b0e12;
             border-bottom: 1px solid #1a1f26;
@@ -81,6 +83,7 @@
         }
         .online-btn:hover { background: #2e405b; }
 
+        /* Room controls */
         .room-controls { padding: 0.5rem 1.2rem; background: #0b0e12; border-bottom: 1px solid #1a1f26; }
         .room-label { font-size: 0.6rem; color: #7e8c9e; text-transform: uppercase; margin-bottom: 3px; }
         .room-field {
@@ -112,6 +115,7 @@
         }
         .room-field button:hover { background: #2d3e5a; }
 
+        /* Messages */
         .messages-container {
             flex: 1;
             overflow-y: auto;
@@ -121,7 +125,7 @@
             gap: 8px;
             background: #0f1219;
         }
-        .message { display: flex; flex-direction: column; animation: fadeSlide 0.2s ease; }
+        .message { display: flex; flex-direction: column; animation: fadeSlide 0.2s ease; position: relative; }
         .message-content { display: flex; align-items: flex-end; gap: 6px; }
         .message-bubble {
             background: #181e26;
@@ -136,6 +140,7 @@
             font-weight: 500;
             line-height: 1.4;
             border: 1px solid #282f39;
+            position: relative;
         }
         .own-message { align-items: flex-end; }
         .own-message .message-bubble {
@@ -154,7 +159,29 @@
         }
         .message-sender { font-weight: 600; color: #8db5e5; }
         .message-time { font-size: 0.65rem; color: #4a5b72; }
+        .message-status { font-size: 0.7rem; margin-left: 3px; }
+        .message-actions {
+            position: absolute;
+            right: 0;
+            top: -18px;
+            background: #1a1f2a;
+            border-radius: 16px;
+            padding: 2px 8px;
+            display: none;
+            gap: 8px;
+            z-index: 10;
+        }
+        .message:hover .message-actions { display: flex; }
+        .action-btn {
+            background: none;
+            border: none;
+            color: #93c5fd;
+            cursor: pointer;
+            font-size: 0.7rem;
+            padding: 2px 5px;
+        }
 
+        /* System messages */
         .system-message { align-items: center !important; }
         .system-message .message-content { justify-content: center !important; }
         .system-message .message-bubble {
@@ -170,6 +197,17 @@
         }
         .system-message .message-header { display: none; }
 
+        .message-bubble::after {
+            content: "🔒";
+            position: absolute;
+            bottom: 2px;
+            right: 5px;
+            font-size: 8px;
+            color: rgba(255,255,255,0.15);
+            pointer-events: none;
+        }
+
+        /* Input area */
         .input-area { padding: 0.8rem 1.2rem 1rem; background: #0b0e12; border-top: 1px solid #1a1f26; }
         .message-form { display: flex; gap: 10px; align-items: flex-end; }
         .message-input-wrapper {
@@ -214,8 +252,8 @@
         .messages-container::-webkit-scrollbar-thumb { background: #2e3a48; border-radius: 8px; }
         .loading { text-align: center; padding: 20px; color: #6c7a89; font-size: 0.8rem; }
 
-        /* Online Popup */
-        .online-popup {
+        /* Popups */
+        .online-popup, .info-popup {
             position: fixed;
             top: 50%;
             left: 50%;
@@ -229,13 +267,13 @@
             width: 80%;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .online-popup h3 { color: #eef2ff; margin-bottom: 12px; font-size: 1rem; }
-        .online-list { max-height: 180px; overflow-y: auto; }
-        .online-item { padding: 6px; border-bottom: 1px solid #2a2f36; color: #b9d0f0; font-size: 0.75rem; display: flex; align-items: center; gap: 8px; }
+        .online-popup h3, .info-popup h3 { color: #eef2ff; margin-bottom: 12px; font-size: 1rem; }
+        .online-list, .seen-list { max-height: 180px; overflow-y: auto; }
+        .online-item, .seen-item { padding: 6px; border-bottom: 1px solid #2a2f36; color: #b9d0f0; font-size: 0.75rem; display: flex; align-items: center; gap: 8px; }
         .status-dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; display: inline-block; }
         .close-popup { margin-top: 12px; background: #2e405b; border: none; padding: 6px 12px; border-radius: 16px; color: white; cursor: pointer; width: 100%; font-size: 0.7rem; }
 
-        /* Modal */
+        /* Modal (login/register) */
         .modal {
             position: fixed;
             top: 0;
@@ -357,7 +395,8 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, push, onChildAdded, query, limitToLast, serverTimestamp, get, set, onValue, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-    
+
+    // ========== FIREBASE CONFIG ==========
     const firebaseConfig = {
         apiKey: "AIzaSyDb0fuG5RUoTtNUuJ10n_A4NCC2GFDaOps",
         authDomain: "hen-s-world.firebaseapp.com",
@@ -366,22 +405,24 @@
         messagingSenderId: "359865594843",
         appId: "1:359865594843:web:3da81e9f7c00bba183adfe"
     };
-    
+
     let app, database;
     let currentRoom = null;
     let currentUsername = null;
     let isFirebaseReady = false;
     let autoDeleteMode = "off";
     let autoDeleteInterval = null;
-    
-    // Helper functions
+    let messagesListener = null;
+    let onlineListener = null;
+
+    // ========== UTILITIES ==========
     function escapeHtml(str) {
         if (!str) return "";
         const div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
     }
-    
+
     function simpleHash(str) {
         let hash = 0;
         for (let i = 0; i < str.length; i++) {
@@ -391,19 +432,19 @@
         }
         return hash.toString(16);
     }
-    
+
     function cleanAnswer(answer) {
         if (!answer) return "";
         return answer.toUpperCase().replace(/[^A-Z0-9]/g, '');
     }
-    
+
     // ========== AUTH SYSTEM ==========
     const securityQuestions = [
         "What is your mother's maiden name?",
         "What was the name of your first pet?",
         "What city were you born in?"
     ];
-    
+
     function showSecurityQuestionsModal() {
         return new Promise((resolve) => {
             const modal = document.createElement('div');
@@ -421,12 +462,12 @@
                 </div>
             `;
             document.body.appendChild(modal);
-            
+
             const container = modal.querySelector('#questionsContainer');
             const errorDiv = modal.querySelector('#securityError');
             const submitBtn = modal.querySelector('#securitySubmitBtn');
             const answers = {};
-            
+
             securityQuestions.forEach((q, i) => {
                 const div = document.createElement('div');
                 div.style.marginBottom = '15px';
@@ -435,7 +476,7 @@
                 container.appendChild(div);
                 answers[q] = div.querySelector(`#ans_${i}`);
             });
-            
+
             const handleSubmit = () => {
                 const securityAnswers = {};
                 for (let i = 0; i < securityQuestions.length; i++) {
@@ -453,12 +494,12 @@
                 resolve(securityAnswers);
             };
             submitBtn.addEventListener('click', handleSubmit);
-            securityQuestions.forEach((_, i) => {
+            for (let i = 0; i < securityQuestions.length; i++) {
                 document.getElementById(`ans_${i}`).addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
-            });
+            }
         });
     }
-    
+
     async function registerUser(username, password, securityAnswers) {
         const userRef = ref(database, `users/${username}`);
         const snapshot = await get(userRef);
@@ -469,7 +510,7 @@
         });
         return { success: true };
     }
-    
+
     async function loginUser(username, password) {
         const userRef = ref(database, `users/${username}`);
         const snapshot = await get(userRef);
@@ -478,7 +519,7 @@
         if (userData.password === simpleHash(password)) return { success: true };
         return { success: false, message: "Wrong password!" };
     }
-    
+
     function showAuthModal() {
         return new Promise((resolve) => {
             let isLogin = true;
@@ -498,7 +539,7 @@
                 </div>
             `;
             document.body.appendChild(modal);
-            
+
             const uname = modal.querySelector('#authUsername');
             const pwd = modal.querySelector('#authPassword');
             const err = modal.querySelector('#authError');
@@ -506,7 +547,7 @@
             const title = modal.querySelector('#authTitle');
             const desc = modal.querySelector('#authDesc');
             const switchBtn = modal.querySelector('#authSwitch');
-            
+
             const updateMode = () => {
                 if (isLogin) {
                     title.innerHTML = '🐔 Login to Hen\'s World';
@@ -523,9 +564,9 @@
                 uname.value = '';
                 pwd.value = '';
             };
-            
+
             switchBtn.addEventListener('click', () => { isLogin = !isLogin; updateMode(); });
-            
+
             const handleSubmit = async () => {
                 const username = uname.value.trim();
                 const password = pwd.value;
@@ -537,7 +578,7 @@
                 err.style.display = 'block';
                 err.innerHTML = '⏳ Processing...';
                 err.style.color = '#fbbf24';
-                
+
                 if (isLogin) {
                     const result = await loginUser(username, password);
                     if (result.success) {
@@ -561,14 +602,14 @@
                     }
                 }
             };
-            
+
             submit.addEventListener('click', handleSubmit);
             uname.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
             pwd.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
             setTimeout(() => uname.focus(), 100);
         });
     }
-    
+
     async function initAuth() {
         const saved = localStorage.getItem("hensworld_username");
         if (saved) {
@@ -587,7 +628,7 @@
             document.getElementById("usernameDisplay").innerText = currentUsername;
         }
     }
-    
+
     // ========== ONLINE USERS ==========
     async function updateOnlineStatus() {
         if (!currentRoom || !currentUsername) return;
@@ -595,7 +636,7 @@
         await set(onlineRef, { username: currentUsername, lastSeen: serverTimestamp(), lastSeenMs: Date.now() });
         onDisconnect(onlineRef).remove();
     }
-    
+
     window.showOnlineUsers = async function() {
         if (!currentRoom) { alert("Join a room first!"); return; }
         const onlineRef = ref(database, `rooms/${currentRoom}/online`);
@@ -618,13 +659,52 @@
         popup.querySelector('.close-popup').onclick = () => popup.remove();
         popup.onclick = (e) => { if (e.target === popup) popup.remove(); };
     };
-    
+
+    // ========== MESSAGE STATUS ==========
+    async function markDelivered(msgId) {
+        if (!currentRoom || !currentUsername) return;
+        await set(ref(database, `rooms/${currentRoom}/messages/${msgId}/delivered/${currentUsername}`), serverTimestamp());
+    }
+
+    async function markSeen(msgId, sender) {
+        if (!currentRoom || !currentUsername || sender === currentUsername) return;
+        await set(ref(database, `rooms/${currentRoom}/messages/${msgId}/seen/${currentUsername}`), serverTimestamp());
+    }
+
+    function getMessageStatus(message) {
+        const sender = message.sender;
+        let othersSeen = 0, othersDelivered = 0;
+        if (message.seen) othersSeen = Object.keys(message.seen).filter(u => u !== sender).length;
+        if (message.delivered) othersDelivered = Object.keys(message.delivered).filter(u => u !== sender).length;
+        if (othersSeen > 0) return { icon: '✓✓', text: `Seen by ${othersSeen} other(s)`, color: '#ff99cc' };
+        if (othersDelivered > 0) return { icon: '✓', text: `Delivered to ${othersDelivered} other(s)`, color: '#888' };
+        return { icon: '○', text: 'Sent', color: '#888' };
+    }
+
+    window.showInfoPopup = function(message) {
+        const popup = document.createElement('div');
+        popup.className = 'info-popup';
+        let html = `<h3>📋 Message Info</h3><p style="color:#aaa;font-size:0.7rem">Message: ${escapeHtml(message.text)}</p><p style="color:#aaa;font-size:0.7rem">Sent by: ${escapeHtml(message.sender)}</p>`;
+        if (message.seen) {
+            const others = Object.keys(message.seen).filter(u => u !== message.sender);
+            if (others.length) {
+                html += '<h4 style="margin-top:10px;color:#ff99cc">👁️ Seen by:</h4><div class="seen-list">';
+                others.forEach(u => { const ts = new Date(message.seen[u]).toLocaleString(); html += `<div class="seen-item">🐔 ${escapeHtml(u)} - ${ts}</div>`; });
+                html += '</div>';
+            } else html += '<p style="color:#888">Only the sender has seen this message</p>';
+        } else html += '<p style="color:#888">No one has seen this message yet</p>';
+        popup.innerHTML = html + `<button class="close-popup">Close</button>`;
+        document.body.appendChild(popup);
+        popup.querySelector('.close-popup').onclick = () => popup.remove();
+        popup.onclick = (e) => { if (e.target === popup) popup.remove(); };
+    };
+
     // ========== AUTO DELETE ==========
     async function saveAutoDeleteMode(mode) {
         if (!currentRoom) return;
         await set(ref(database, `rooms/${currentRoom}/settings/autoDelete`), mode);
     }
-    
+
     async function loadAutoDeleteMode() {
         if (!currentRoom) return;
         const snap = await get(ref(database, `rooms/${currentRoom}/settings/autoDelete`));
@@ -634,13 +714,13 @@
             if (autoDeleteMode !== 'off') startAutoDeleteTimer();
         }
     }
-    
+
     function startAutoDeleteTimer() {
         if (autoDeleteInterval) clearInterval(autoDeleteInterval);
         if (autoDeleteMode === 'off') return;
         let ms = autoDeleteMode === '1hour' ? 3600000 : autoDeleteMode === '24hour' ? 86400000 : 0;
         if (ms === 0) {
-            // Immediate delete
+            // immediate
             set(ref(database, `rooms/${currentRoom}/messages`), null);
             addSystemMessage(`⚡ All messages cleared!`);
             return;
@@ -661,11 +741,11 @@
             }
         }, 30000);
     }
-    
+
     function stopAutoDeleteTimer() {
         if (autoDeleteInterval) { clearInterval(autoDeleteInterval); autoDeleteInterval = null; }
     }
-    
+
     async function changeAutoDeleteMode() {
         const select = document.getElementById('autoDeleteSelect');
         autoDeleteMode = select.value;
@@ -682,76 +762,119 @@
             addSystemMessage(`🕐 Auto-delete disabled.`);
         }
     }
-    
-    // ========== CHAT ==========
+
+    // ========== MESSAGE DISPLAY ==========
+    function displayMessage(message, msgId) {
+        const container = document.getElementById("messagesContainer");
+        if (!container) return;
+        if (container.children.length === 1 && container.children[0].classList?.contains('loading')) container.innerHTML = '';
+
+        const isOwn = message.sender === currentUsername;
+        const isSystem = message.isSystem === true;
+        const div = document.createElement('div');
+        div.className = 'message';
+        if (!isSystem) div.classList.add(isOwn ? 'own-message' : '');
+        if (isSystem) div.classList.add('system-message');
+        div.id = `msg-${msgId}`;
+
+        const timeStr = message.timestampMs ? new Date(message.timestampMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'now';
+        const status = getMessageStatus(message);
+        const statusIcon = (!isSystem && isOwn) ? `<span class="message-status" style="color:${status.color}" title="${status.text}"> ${status.icon}</span>` : '';
+
+        if (isSystem) {
+            div.innerHTML = `<div class="message-content"><div class="message-bubble">🐔 ${escapeHtml(message.text)}</div></div>`;
+        } else {
+            div.innerHTML = `
+                <div class="message-header">
+                    <span class="message-sender">${escapeHtml(message.sender)}</span>
+                    <span class="message-time">${timeStr}</span>
+                    ${statusIcon}
+                </div>
+                <div class="message-content">
+                    <div class="message-bubble">${escapeHtml(message.text)}</div>
+                </div>
+                <div class="message-actions">
+                    <button class="action-btn info-btn">ℹ️ Info</button>
+                </div>
+            `;
+            const infoBtn = div.querySelector('.info-btn');
+            infoBtn.addEventListener('click', () => window.showInfoPopup(message));
+        }
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    async function sendMessage(text) {
+        if (!text.trim()) return;
+        if (!currentRoom) { alert("Join a room first!"); return; }
+        const msgData = {
+            sender: currentUsername,
+            text: text.trim(),
+            timestamp: serverTimestamp(),
+            timestampMs: Date.now(),
+            delivered: {},
+            seen: {}
+        };
+        const newMsgRef = await push(ref(database, `rooms/${currentRoom}/messages`), msgData);
+        await markDelivered(newMsgRef.key);
+        document.getElementById("messageInput").value = "";
+    }
+
     async function addSystemMessage(text) {
         if (!currentRoom) return;
         await push(ref(database, `rooms/${currentRoom}/messages`), {
             sender: "🐔 system", text, timestamp: serverTimestamp(), timestampMs: Date.now(), isSystem: true
         });
     }
-    
-    function displayMessage(msg, msgId) {
-        const container = document.getElementById("messagesContainer");
-        if (!container) return;
-        if (container.children.length === 1 && container.children[0].classList?.contains('loading')) container.innerHTML = '';
-        const div = document.createElement('div');
-        div.className = 'message';
-        const isOwn = msg.sender === currentUsername;
-        const isSystem = msg.isSystem === true;
-        if (!isSystem) div.classList.add(isOwn ? 'own-message' : '');
-        if (isSystem) div.classList.add('system-message');
-        const time = msg.timestampMs ? new Date(msg.timestampMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'now';
-        if (isSystem) {
-            div.innerHTML = `<div class="message-content"><div class="message-bubble">🐔 ${escapeHtml(msg.text)}</div></div>`;
-        } else {
-            div.innerHTML = `
-                <div class="message-header">
-                    <span class="message-sender">${escapeHtml(msg.sender)}</span>
-                    <span class="message-time">${time}</span>
-                </div>
-                <div class="message-content">
-                    <div class="message-bubble">${escapeHtml(msg.text)}</div>
-                </div>
-            `;
-        }
-        container.appendChild(div);
-        container.scrollTop = container.scrollHeight;
-    }
-    
-    async function sendMessage(text) {
-        if (!text.trim()) return;
-        if (!currentRoom) { alert("Join a room first!"); return; }
-        await push(ref(database, `rooms/${currentRoom}/messages`), {
-            sender: currentUsername, text: text.trim(), timestamp: serverTimestamp(), timestampMs: Date.now()
+
+    // ========== ROOM MANAGEMENT ==========
+    async function setupRoomListeners(roomId) {
+        if (messagesListener) messagesListener();
+        const msgsRef = ref(database, `rooms/${roomId}/messages`);
+        messagesListener = onChildAdded(query(msgsRef, limitToLast(100)), async (snap) => {
+            const msg = snap.val();
+            if (msg) {
+                displayMessage(msg, snap.key);
+                if (msg.sender !== currentUsername && !msg.isSystem) {
+                    await markSeen(snap.key, msg.sender);
+                }
+            }
         });
-        document.getElementById("messageInput").value = "";
+        // Also listen for status updates
+        onValue(msgsRef, (snap) => {
+            const msgs = snap.val();
+            if (msgs) {
+                for (const [id, msg] of Object.entries(msgs)) {
+                    const el = document.getElementById(`msg-${id}`);
+                    if (el && !msg.isSystem) {
+                        const statusSpan = el.querySelector('.message-status');
+                        if (statusSpan) {
+                            const status = getMessageStatus(msg);
+                            statusSpan.innerHTML = `<span style="color:${status.color}" title="${status.text}"> ${status.icon}</span>`;
+                        }
+                    }
+                }
+            }
+        });
     }
-    
-    function joinRoom(roomId) {
-        if (!currentRoom) {
-            currentRoom = roomId;
-            document.getElementById("messagesContainer").innerHTML = '<div class="loading">🐔 loading messages...</div>';
-            const msgsRef = ref(database, `rooms/${currentRoom}/messages`);
-            onChildAdded(query(msgsRef, limitToLast(100)), (snap) => { if (snap.val()) displayMessage(snap.val(), snap.key); });
-            updateOnlineStatus();
-            loadAutoDeleteMode();
-            setTimeout(() => addSystemMessage(`${currentUsername} joined the room`), 300);
-            document.getElementById("messageInput").disabled = false;
-            document.getElementById("sendBtn").disabled = false;
-        } else if (currentRoom !== roomId) {
-            // leave old room, join new
-            if (currentRoom) set(ref(database, `rooms/${currentRoom}/online/${currentUsername}`), null);
-            currentRoom = roomId;
-            document.getElementById("messagesContainer").innerHTML = '<div class="loading">🐔 loading messages...</div>';
-            const msgsRef = ref(database, `rooms/${currentRoom}/messages`);
-            onChildAdded(query(msgsRef, limitToLast(100)), (snap) => { if (snap.val()) displayMessage(snap.val(), snap.key); });
-            updateOnlineStatus();
-            loadAutoDeleteMode();
-            setTimeout(() => addSystemMessage(`${currentUsername} joined the room`), 300);
+
+    async function joinRoom(roomId) {
+        if (!currentUsername) return;
+        if (currentRoom === roomId) return;
+        // Remove old online status
+        if (currentRoom) {
+            await set(ref(database, `rooms/${currentRoom}/online/${currentUsername}`), null);
         }
+        currentRoom = roomId;
+        document.getElementById("messagesContainer").innerHTML = '<div class="loading">🐔 loading messages...</div>';
+        await setupRoomListeners(currentRoom);
+        await updateOnlineStatus();
+        await loadAutoDeleteMode();
+        setTimeout(() => addSystemMessage(`${currentUsername} joined the room`), 300);
+        document.getElementById("messageInput").disabled = false;
+        document.getElementById("sendBtn").disabled = false;
     }
-    
+
     // ========== LOGOUT ==========
     window.logout = async function() {
         if (currentRoom && currentUsername) {
@@ -760,7 +883,7 @@
         localStorage.removeItem("hensworld_username");
         location.reload();
     };
-    
+
     // ========== INIT ==========
     async function initFirebase() {
         app = initializeApp(firebaseConfig);
@@ -768,7 +891,7 @@
         isFirebaseReady = true;
         return true;
     }
-    
+
     function setupUI() {
         document.getElementById("joinRoomBtn").onclick = () => {
             let room = document.getElementById("roomInput").value.trim();
@@ -777,26 +900,29 @@
         };
         document.getElementById("sendBtn").onclick = () => sendMessage(document.getElementById("messageInput").value);
         document.getElementById("messageInput").onkeydown = (e) => {
-            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(e.target.value); }
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage(e.target.value);
+            }
         };
         document.getElementById("logoutBtn").onclick = () => window.logout();
         document.getElementById("onlinePeopleBtn").onclick = () => window.showOnlineUsers();
         document.getElementById("autoDeleteSelect").onchange = () => changeAutoDeleteMode();
         document.getElementById("roomInput").value = "lobby";
-        setTimeout(() => { if (isFirebaseReady && currentUsername) joinRoom("lobby"); }, 500);
+        setTimeout(() => { if (currentUsername) joinRoom("lobby"); }, 500);
     }
-    
+
     function addWatermark() {
         const wm = document.createElement('div');
         wm.style.cssText = `position:fixed; bottom:5px; left:5px; right:5px; font-size:8px; color:rgba(150,150,150,0.2); z-index:9998; pointer-events:none; text-align:center;`;
         wm.innerHTML = `${currentUsername} • ${new Date().toLocaleString()} • hensworld.chat`;
         document.body.appendChild(wm);
     }
-    
+
     document.addEventListener('contextmenu', (e) => e.preventDefault());
     window.addEventListener('blur', () => document.querySelector('.app')?.classList.add('screenshot-detected'));
     window.addEventListener('focus', () => setTimeout(() => document.querySelector('.app')?.classList.remove('screenshot-detected'), 300));
-    
+
     async function init() {
         await initFirebase();
         await initAuth();
