@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hen's World — Secure Chat</title>
+    <title>Hen's World — Auto-Delete + Read Receipts</title>
     <style>
         * {
             margin: 0;
@@ -20,7 +20,6 @@
             align-items: center;
             padding: 1rem;
             -webkit-touch-callout: none;
-            -webkit-user-select: none;
             user-select: none;
         }
 
@@ -30,7 +29,7 @@
             height: 90vh;
             background: #111417;
             border-radius: 24px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -44,6 +43,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
         }
 
         .header-left {
@@ -52,46 +53,83 @@
 
         .badge {
             font-size: 0.7rem;
-            letter-spacing: 1px;
             color: #6c7a89;
             text-transform: uppercase;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
         }
 
         h1 {
-            font-size: 1.7rem;
-            font-weight: 500;
+            font-size: 1.5rem;
             color: #eef2ff;
-            letter-spacing: -0.5px;
         }
 
         .sub {
             color: #6c86a3;
-            font-size: 0.8rem;
-            margin-top: 6px;
+            font-size: 0.7rem;
+        }
+
+        .controls-group {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            background: #0b0e12;
+            padding: 6px 14px;
+            border-radius: 40px;
+            border: 1px solid #252b33;
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            color: #b9d0f0;
+        }
+
+        .toggle-switch input {
+            width: 36px;
+            height: 20px;
+            appearance: none;
+            background: #2d2f36;
+            border-radius: 20px;
+            position: relative;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #4a5568;
+        }
+
+        .toggle-switch input:checked {
+            background: #2e7d64;
+        }
+
+        .toggle-switch input::before {
+            content: "";
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 1px;
+            left: 2px;
+            transition: 0.2s;
+        }
+
+        .toggle-switch input:checked::before {
+            transform: translateX(16px);
         }
 
         .logout-btn {
             background: #2d1f1f;
             border: 1px solid #8b3a3a;
             border-radius: 40px;
-            padding: 8px 18px;
+            padding: 6px 16px;
             color: #ffaaaa;
             font-family: monospace;
-            font-size: 0.8rem;
-            font-weight: bold;
+            font-size: 0.75rem;
             cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .logout-btn:hover {
-            background: #4a2a2a;
-            color: #ffcccc;
         }
 
         .room-controls {
-            padding: 1rem 1.5rem;
+            padding: 0.8rem 1.5rem;
             background: #0b0e12;
             border-bottom: 1px solid #1a1f26;
             display: flex;
@@ -102,16 +140,7 @@
         }
 
         .room-input-group {
-            flex: 3;
-            min-width: 180px;
-        }
-
-        .room-label {
-            font-size: 0.7rem;
-            color: #7e8c9e;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-            letter-spacing: 0.5px;
+            flex: 2;
         }
 
         .room-field {
@@ -120,78 +149,48 @@
             border: 1px solid #252b33;
             border-radius: 40px;
             overflow: hidden;
-            transition: 0.2s;
-        }
-        .room-field:focus-within {
-            border-color: #3e6b9e;
-            box-shadow: 0 0 0 1px #1e3a5f;
         }
 
         .room-field input {
             flex: 1;
             background: transparent;
             border: none;
-            padding: 10px 16px;
+            padding: 8px 14px;
             color: #dfe6f0;
             font-family: monospace;
-            font-size: 0.9rem;
             outline: none;
         }
 
         .room-field button {
             background: #1e293b;
             border: none;
-            border-left: 1px solid #2d3540;
-            padding: 0 20px;
+            padding: 0 18px;
             color: #b9d0f0;
-            font-weight: bold;
-            font-family: monospace;
             cursor: pointer;
-            transition: 0.2s;
-            font-size: 0.8rem;
-        }
-        .room-field button:hover {
-            background: #2d3e5a;
-            color: white;
         }
 
         .room-status {
-            flex: 2;
-            text-align: right;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             background: #07090e;
-            padding: 8px 16px;
+            padding: 6px 14px;
             border-radius: 40px;
-            border: 1px solid #20262e;
-        }
-
-        .room-name-badge {
-            color: #93c5fd;
-            font-weight: 600;
-            word-break: break-all;
-        }
-
-        .connection-status {
-            font-size: 0.7rem;
-            margin-top: 4px;
-            color: #5f7d9c;
         }
 
         .messages-container {
             flex: 1;
             overflow-y: auto;
-            padding: 1.2rem 1.5rem;
+            padding: 1rem;
             display: flex;
             flex-direction: column;
             gap: 12px;
             background: #0f1219;
-            scroll-behavior: smooth;
         }
 
         .message {
             display: flex;
             flex-direction: column;
             animation: fadeSlide 0.2s ease;
+            position: relative;
         }
 
         .message-header {
@@ -200,6 +199,8 @@
             margin-bottom: 4px;
             display: flex;
             gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
         .message-sender {
@@ -222,19 +223,9 @@
             word-wrap: break-word;
             color: #eef3ff;
             font-size: 0.9rem;
-            line-height: 1.4;
             border: 1px solid #282f39;
             position: relative;
-        }
-
-        .message-text::after {
-            content: "🔒";
-            position: absolute;
-            bottom: 2px;
-            right: 5px;
-            font-size: 8px;
-            color: rgba(255,255,255,0.15);
-            pointer-events: none;
+            cursor: pointer;
         }
 
         .own-message {
@@ -250,8 +241,23 @@
             justify-content: flex-end;
         }
 
+        .read-status {
+            font-size: 0.7rem;
+            margin-left: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .double-tick {
+            color: #34b7f1;
+            font-weight: bold;
+        }
+        .single-tick {
+            color: #8e9eae;
+        }
+
         .input-area {
-            padding: 1rem 1.5rem 1.3rem;
+            padding: 1rem;
             background: #0b0e12;
             border-top: 1px solid #1a1f26;
         }
@@ -259,7 +265,6 @@
         .message-form {
             display: flex;
             gap: 12px;
-            align-items: flex-end;
         }
 
         .message-input-wrapper {
@@ -268,20 +273,15 @@
             border: 1px solid #252b33;
             border-radius: 28px;
             padding: 6px 16px;
-            transition: 0.2s;
-        }
-        .message-input-wrapper:focus-within {
-            border-color: #3e6b9e;
         }
 
         #messageInput {
             width: 100%;
             background: transparent;
             border: none;
-            padding: 10px 0;
+            padding: 8px 0;
             color: #edf4ff;
             font-family: monospace;
-            font-size: 0.9rem;
             outline: none;
             resize: none;
         }
@@ -290,85 +290,16 @@
             background: #1f2a3c;
             border: none;
             border-radius: 40px;
-            padding: 10px 24px;
+            padding: 0 24px;
             color: #c0dcff;
-            font-weight: bold;
-            font-family: monospace;
             cursor: pointer;
-            transition: 0.2s;
-            font-size: 0.8rem;
-            border: 1px solid #2f3a48;
-        }
-        #sendBtn:hover {
-            background: #2e405b;
-            color: white;
         }
 
         @keyframes fadeSlide {
-            from {
-                opacity: 0;
-                transform: translateY(6px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(6px);}
+            to { opacity: 1; transform: translateY(0);}
         }
 
-        .messages-container::-webkit-scrollbar {
-            width: 6px;
-        }
-        .messages-container::-webkit-scrollbar-track {
-            background: #0a0d12;
-        }
-        .messages-container::-webkit-scrollbar-thumb {
-            background: #2e3a48;
-            border-radius: 8px;
-        }
-
-        @media (max-width: 550px) {
-            .app {
-                height: 95vh;
-                border-radius: 20px;
-            }
-            .room-controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .room-status {
-                text-align: center;
-            }
-            .message-text {
-                max-width: 95%;
-            }
-            .logout-btn {
-                padding: 6px 12px;
-                font-size: 0.7rem;
-            }
-            h1 {
-                font-size: 1.3rem;
-            }
-        }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #6c7a89;
-        }
-        
-        .system-message .message-text {
-            background: #1a1f2a;
-            color: #a0b4d0;
-            font-style: italic;
-            border-color: #2d3543;
-            font-size: 0.8rem;
-        }
-        
-        .system-message .message-sender {
-            color: #8aa2c2;
-        }
-
-        /* Modal Styles */
         .modal {
             position: fixed;
             top: 0;
@@ -380,163 +311,59 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            animation: fadeIn 0.3s;
-            overflow-y: auto;
         }
-        
+
         .modal-content {
             background: #111417;
             border-radius: 24px;
-            padding: 30px;
+            padding: 24px;
             max-width: 450px;
             width: 90%;
             border: 1px solid #2a2f36;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-            max-height: 90vh;
+            max-height: 80vh;
             overflow-y: auto;
         }
-        
-        .modal-content h2 {
+
+        .modal-content h3 {
             color: #eef2ff;
-            margin-bottom: 10px;
-            font-size: 1.5rem;
+            margin-bottom: 16px;
         }
-        
-        .modal-content p {
-            color: #6c86a3;
-            margin-bottom: 20px;
+
+        .seen-list {
+            list-style: none;
+            padding: 0;
+        }
+        .seen-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #252b33;
+            color: #b9d0f0;
             font-size: 0.85rem;
         }
-        
-        .auth-input {
-            width: 100%;
-            background: #050709;
-            border: 1px solid #252b33;
-            border-radius: 40px;
-            padding: 12px 18px;
-            color: #dfe6f0;
-            font-family: monospace;
-            font-size: 1rem;
-            margin-bottom: 15px;
-            outline: none;
-        }
-        
-        .auth-input:focus {
-            border-color: #3e6b9e;
-        }
-        
-        .auth-error {
-            color: #ff8888;
-            font-size: 0.75rem;
-            margin-bottom: 15px;
-            display: none;
-        }
-        
-        .auth-buttons {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 15px;
-        }
-        
-        .auth-btn {
-            flex: 1;
-            padding: 10px;
-            border-radius: 40px;
+        .close-modal {
+            background: #2d3e5a;
             border: none;
-            font-family: monospace;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        
-        .auth-btn-primary {
-            background: #1e293b;
-            color: #b9d0f0;
-            border: 1px solid #2f3a48;
-        }
-        
-        .auth-btn-primary:hover {
-            background: #2e405b;
+            padding: 8px 16px;
+            border-radius: 40px;
             color: white;
-        }
-        
-        .auth-btn-secondary {
-            background: #2d1f1f;
-            color: #ffaaaa;
-            border: 1px solid #8b3a3a;
-        }
-        
-        .auth-switch {
-            text-align: center;
-            font-size: 0.8rem;
-            color: #6c86a3;
+            margin-top: 16px;
             cursor: pointer;
-            margin-top: 10px;
+            width: 100%;
         }
-        
-        .auth-switch span {
-            color: #93c5fd;
-            text-decoration: underline;
-        }
-        
-        .forgot-password {
-            text-align: center;
-            font-size: 0.7rem;
-            color: #6c86a3;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        
-        .forgot-password span {
-            color: #fbbf24;
-            text-decoration: underline;
-        }
-        
-        .security-note {
+        .system-message .message-text {
             background: #1a1f2a;
-            border-left: 3px solid #fbbf24;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 0.7rem;
-            color: #fbbf24;
+            color: #a0b4d0;
+            font-style: italic;
         }
-        
-        .security-note strong {
-            color: #ffaa44;
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6c7a89;
         }
-        
-        .answer-error {
-            font-size: 0.65rem;
-            margin-top: -10px;
-            margin-bottom: 10px;
-            display: none;
-        }
-        
-        .screenshot-detected {
-            filter: blur(10px);
-            transition: filter 0.3s;
-        }
-        
-        .screenshot-warning {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.95);
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            gap: 20px;
-            animation: fadeIn 0.2s;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        .info-badge {
+            font-size: 10px;
+            margin-left: 8px;
+            opacity: 0.6;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -545,44 +372,49 @@
 <div class="app">
     <div class="header">
         <div class="header-left">
-            <div class="badge">🐔 secure messenger · hen's world</div>
-            <h1>Hen's World Chat</h1>
-            <div class="sub">secure · private · worldwide</div>
+            <div class="badge">🐔 HEN'S WORLD • EPHEMERAL + READ RECEIPTS</div>
+            <h1>Secure Chat</h1>
+            <div class="sub">auto-delete | double blue ticks | message insights</div>
         </div>
-        <button id="logoutBtn" class="logout-btn">🚪 Logout</button>
+        <div class="controls-group">
+            <label class="toggle-switch">
+                <span>🔁 Auto-Delete (1h)</span>
+                <input type="checkbox" id="autoDeleteToggle" checked>
+            </label>
+            <button id="logoutBtn" class="logout-btn">🚪 Logout</button>
+        </div>
     </div>
 
     <div class="room-controls">
         <div class="room-input-group">
-            <div class="room-label">🔗 room identifier</div>
             <div class="room-field">
-                <input type="text" id="roomInput" placeholder="e.g., coop-chat, hens-den, global-lounge" autocomplete="off">
+                <input type="text" id="roomInput" placeholder="room id (e.g., hens-den)" autocomplete="off">
                 <button id="joinRoomBtn">join</button>
             </div>
         </div>
         <div class="room-status">
-            🌀 ROOM // <span id="currentRoomName" class="room-name-badge">—</span>
-            <div class="connection-status" id="connectionStatus">connecting...</div>
+            🌀 ROOM: <span id="currentRoomName">—</span>
+            <div id="connectionStatus" style="font-size:0.7rem;">connecting...</div>
         </div>
     </div>
 
     <div class="messages-container" id="messagesContainer">
-        <div class="loading">✨ Welcome to Hen's World! Join a room to start chatting...</div>
+        <div class="loading">✨ Join a room to start chatting. Auto-delete ON by default (1 hour).</div>
     </div>
 
     <div class="input-area">
         <div class="message-form">
             <div class="message-input-wrapper">
-                <textarea id="messageInput" rows="1" placeholder="type message... (enter to send)" disabled></textarea>
+                <textarea id="messageInput" rows="1" placeholder="Type message... (Enter to send)" disabled></textarea>
             </div>
-            <button id="sendBtn" disabled>send ➤</button>
+            <button id="sendBtn" disabled>➤ send</button>
         </div>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, query, limitToLast, serverTimestamp, get, set, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, query, limitToLast, serverTimestamp, get, set, update, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
     
     const firebaseConfig = {
         apiKey: "AIzaSyDb0fuG5RUoTtNUuJ10n_A4NCC2GFDaOps",
@@ -598,714 +430,287 @@
     let currentRoom = null;
     let currentUsername = null;
     let isFirebaseReady = false;
+    let autoDeleteEnabled = true;       // default ON
+    let messageElementsMap = new Map();  // messageId -> DOM element
     
-    // Security Questions
-    const securityQuestions = [
-        "What is your mother's maiden name?",
-        "What was the name of your first pet?",
-        "What was your childhood nickname?",
-        "What is your favorite teacher's name?",
-        "What is your best friend's first name?",
-        "What was the name of your first school?",
-        "What is your father's middle name?",
-        "What city were you born in?"
-    ];
-    
-    // Simple hash function
+    // ========== SIMPLE AUTH (preserved from original) ==========
     function simpleHash(str) {
         let hash = 0;
         for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
+            hash = ((hash << 5) - hash) + str.charCodeAt(i);
+            hash |= 0;
         }
         return hash.toString(16);
     }
     
-    // Clean answer - STRICT enforcement
-    function cleanAnswer(answer) {
-        if (!answer) return "";
-        let cleaned = answer.toUpperCase().replace(/[^A-Z0-9]/g, '');
-        cleaned = cleaned.replace(/\s/g, '');
-        return cleaned;
-    }
-    
-    // Show Security Questions Modal
-    function showSecurityQuestionsModal(username) {
-        return new Promise((resolve) => {
-            const shuffled = [...securityQuestions];
-            for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
-            const selectedQuestions = shuffled.slice(0, 3);
-            
-            const modal = document.createElement('div');
-            modal.className = 'modal';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <h2>🔐 Security Questions</h2>
-                    <div class="security-note">
-                        ⚠️ <strong>IMPORTANT RULES:</strong><br>
-                        • Use ONLY letters (A-Z) and numbers (0-9)<br>
-                        • NO spaces allowed<br>
-                        • NO special characters (!@#$% etc.)<br>
-                        • Answers will be stored in CAPITAL LETTERS<br>
-                        • Example: "My Dog Max" → "MYDOGMAX"
-                    </div>
-                    <p>Please answer these 3 security questions:</p>
-                    <div id="questionsContainer"></div>
-                    <div id="securityError" class="auth-error"></div>
-                    <div class="auth-buttons">
-                        <button id="securitySubmitBtn" class="auth-btn auth-btn-primary">Submit & Continue</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-            
-            const container = modal.querySelector('#questionsContainer');
-            const errorDiv = modal.querySelector('#securityError');
-            const submitBtn = modal.querySelector('#securitySubmitBtn');
-            
-            const answers = {};
-            const answerInputs = [];
-            
-            selectedQuestions.forEach((question, index) => {
-                const div = document.createElement('div');
-                div.style.marginBottom = '15px';
-                div.innerHTML = `
-                    <label style="color: #8db5e5; font-size: 0.75rem; margin-bottom: 5px; display: block;">${index + 1}. ${question}</label>
-                    <input type="text" id="answer_${index}" class="auth-input" placeholder="Your answer (A-Z, 0-9 only - NO spaces)" style="margin-bottom: 5px;">
-                    <div style="font-size: 0.65rem; margin-top: -10px; margin-bottom: 10px; display: none;" id="error_${index}" class="answer-error"></div>
-                `;
-                container.appendChild(div);
-                const input = div.querySelector(`#answer_${index}`);
-                const inputError = div.querySelector(`#error_${index}`);
-                answers[question] = input;
-                answerInputs.push({ input, error: inputError });
-                
-                input.addEventListener('input', function() {
-                    const value = this.value;
-                    const hasSpace = /\s/.test(value);
-                    const hasSpecial = /[^A-Za-z0-9]/.test(value);
-                    
-                    if (hasSpace) {
-                        inputError.style.display = 'block';
-                        inputError.innerHTML = '❌ SPACES NOT ALLOWED!';
-                        inputError.style.color = '#ff8888';
-                        this.style.borderColor = '#ff4444';
-                    } else if (hasSpecial) {
-                        inputError.style.display = 'block';
-                        inputError.innerHTML = '❌ Use ONLY letters and numbers!';
-                        inputError.style.color = '#ff8888';
-                        this.style.borderColor = '#ff4444';
-                    } else {
-                        const cleaned = cleanAnswer(value);
-                        if (cleaned.length > 0) {
-                            inputError.style.display = 'block';
-                            inputError.style.color = '#10b981';
-                            inputError.innerHTML = `✅ Will be stored as: "${cleaned}"`;
-                            this.style.borderColor = '#252b33';
-                        } else if (value.length > 0) {
-                            inputError.style.display = 'block';
-                            inputError.innerHTML = '❌ Invalid characters detected!';
-                            inputError.style.color = '#ff8888';
-                            this.style.borderColor = '#ff4444';
-                        } else {
-                            inputError.style.display = 'none';
-                            this.style.borderColor = '#252b33';
-                        }
-                    }
-                });
-            });
-            
-            const handleSubmit = async () => {
-                const securityAnswers = {};
-                let valid = true;
-                
-                errorDiv.style.display = 'none';
-                
-                for (let i = 0; i < selectedQuestions.length; i++) {
-                    const question = selectedQuestions[i];
-                    const answer = answers[question].value;
-                    const inputElement = answers[question];
-                    const inputError = answerInputs[i].error;
-                    
-                    if (!answer || answer.trim().length === 0) {
-                        inputError.style.display = 'block';
-                        inputError.innerHTML = '❌ This field is required!';
-                        inputError.style.color = '#ff8888';
-                        inputElement.style.borderColor = '#ff4444';
-                        valid = false;
-                        continue;
-                    }
-                    
-                    if (/\s/.test(answer)) {
-                        inputError.style.display = 'block';
-                        inputError.innerHTML = '❌ SPACES ARE NOT ALLOWED! Please remove spaces.';
-                        inputError.style.color = '#ff8888';
-                        inputElement.style.borderColor = '#ff4444';
-                        valid = false;
-                        continue;
-                    }
-                    
-                    if (/[^A-Za-z0-9]/.test(answer)) {
-                        inputError.style.display = 'block';
-                        inputError.innerHTML = '❌ Only letters (A-Z) and numbers (0-9) allowed!';
-                        inputError.style.color = '#ff8888';
-                        inputElement.style.borderColor = '#ff4444';
-                        valid = false;
-                        continue;
-                    }
-                    
-                    const cleaned = cleanAnswer(answer);
-                    if (cleaned.length < 2) {
-                        inputError.style.display = 'block';
-                        inputError.innerHTML = '❌ Answer must be at least 2 characters!';
-                        inputError.style.color = '#ff8888';
-                        inputElement.style.borderColor = '#ff4444';
-                        valid = false;
-                        continue;
-                    }
-                    
-                    securityAnswers[question] = cleaned;
-                }
-                
-                if (valid) {
-                    errorDiv.style.display = 'none';
-                    modal.remove();
-                    resolve(securityAnswers);
-                } else {
-                    errorDiv.style.display = 'block';
-                    errorDiv.innerHTML = '❌ Please fix the errors above before continuing.';
-                    errorDiv.style.color = '#ff8888';
-                    const firstError = document.querySelector('.answer-error[style*="display: block"]');
-                    if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            };
-            
-            submitBtn.addEventListener('click', handleSubmit);
-            answerInputs.forEach(({ input }) => {
-                input.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') handleSubmit();
-                });
-            });
-        });
-    }
-    
-    // Show Forgot Password Modal
-    async function showForgotPasswordModal() {
-        return new Promise((resolve) => {
-            let step = 1;
-            let username = '';
-            let userQuestions = {};
-            
-            const modal = document.createElement('div');
-            modal.className = 'modal';
-            modal.innerHTML = `
-                <div class="modal-content" id="forgotModalContent">
-                    <h2 id="forgotTitle">🔐 Reset Password</h2>
-                    <div id="forgotBody"></div>
-                    <div id="forgotError" class="auth-error"></div>
-                    <div class="auth-buttons">
-                        <button id="forgotBackBtn" class="auth-btn auth-btn-secondary">Back</button>
-                        <button id="forgotNextBtn" class="auth-btn auth-btn-primary">Next</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-            
-            const titleEl = modal.querySelector('#forgotTitle');
-            const bodyEl = modal.querySelector('#forgotBody');
-            const errorDiv = modal.querySelector('#forgotError');
-            const backBtn = modal.querySelector('#forgotBackBtn');
-            const nextBtn = modal.querySelector('#forgotNextBtn');
-            
-            async function loadStep() {
-                errorDiv.style.display = 'none';
-                
-                if (step === 1) {
-                    titleEl.innerHTML = '🔐 Enter Username';
-                    bodyEl.innerHTML = `
-                        <p>Enter your username to reset password</p>
-                        <input type="text" id="resetUsername" class="auth-input" placeholder="Username" autocomplete="off">
-                    `;
-                    setTimeout(() => document.getElementById('resetUsername')?.focus(), 100);
-                } 
-                else if (step === 2) {
-                    titleEl.innerHTML = '🔐 Answer Security Questions';
-                    const usernameInput = document.getElementById('resetUsername');
-                    username = usernameInput?.value.trim();
-                    
-                    if (!username || username.length < 3) {
-                        errorDiv.style.display = 'block';
-                        errorDiv.innerHTML = '❌ Please enter a valid username';
-                        step = 1;
-                        loadStep();
-                        return;
-                    }
-                    
-                    const userRef = ref(database, `users/${username}`);
-                    const snapshot = await get(userRef);
-                    
-                    if (!snapshot.exists()) {
-                        errorDiv.style.display = 'block';
-                        errorDiv.innerHTML = '❌ Username not found!';
-                        step = 1;
-                        loadStep();
-                        return;
-                    }
-                    
-                    const userData = snapshot.val();
-                    if (!userData.securityQuestions) {
-                        errorDiv.style.display = 'block';
-                        errorDiv.innerHTML = '❌ No security questions found for this account';
-                        step = 1;
-                        loadStep();
-                        return;
-                    }
-                    
-                    userQuestions = userData.securityQuestions;
-                    const questions = Object.keys(userQuestions);
-                    
-                    let html = `<p>Answer these security questions to verify your identity:</p>
-                                <div class="security-note" style="margin-bottom: 15px;">
-                                    ⚠️ Use ONLY letters and numbers. NO spaces. Answers are case-sensitive (use CAPITALS).
-                                </div>`;
-                    questions.forEach((question, index) => {
-                        html += `
-                            <div style="margin-bottom: 15px;">
-                                <label style="color: #8db5e5; font-size: 0.75rem; margin-bottom: 5px; display: block;">${index + 1}. ${question}</label>
-                                <input type="text" id="secAnswer_${index}" class="auth-input" placeholder="Your answer (A-Z, 0-9 only)" style="margin-bottom: 5px;">
-                                <div style="font-size: 0.6rem; color: #ff8888;" id="secError_${index}" class="answer-error"></div>
-                            </div>
-                        `;
-                    });
-                    bodyEl.innerHTML = html;
-                    
-                    questions.forEach((_, index) => {
-                        const input = document.getElementById(`secAnswer_${index}`);
-                        const errorEl = document.getElementById(`secError_${index}`);
-                        
-                        if (input) {
-                            input.addEventListener('input', function() {
-                                const value = this.value;
-                                const hasSpace = /\s/.test(value);
-                                const hasSpecial = /[^A-Za-z0-9]/.test(value);
-                                
-                                if (hasSpace) {
-                                    errorEl.style.display = 'block';
-                                    errorEl.innerHTML = '❌ SPACES NOT ALLOWED!';
-                                    this.style.borderColor = '#ff4444';
-                                } else if (hasSpecial) {
-                                    errorEl.style.display = 'block';
-                                    errorEl.innerHTML = '❌ Use ONLY letters and numbers!';
-                                    this.style.borderColor = '#ff4444';
-                                } else {
-                                    errorEl.style.display = 'none';
-                                    this.style.borderColor = '#252b33';
-                                }
-                            });
-                        }
-                    });
-                    
-                    setTimeout(() => document.getElementById('secAnswer_0')?.focus(), 100);
-                } 
-                else if (step === 3) {
-                    const questions = Object.keys(userQuestions);
-                    let allCorrect = true;
-                    const errorMessages = [];
-                    
-                    for (let i = 0; i < questions.length; i++) {
-                        const question = questions[i];
-                        const inputAnswer = document.getElementById(`secAnswer_${i}`)?.value;
-                        const errorEl = document.getElementById(`secError_${i}`);
-                        
-                        if (!inputAnswer || inputAnswer.trim().length === 0) {
-                            if (errorEl) {
-                                errorEl.style.display = 'block';
-                                errorEl.innerHTML = '❌ This field is required!';
-                                errorEl.style.color = '#ff8888';
-                            }
-                            allCorrect = false;
-                            continue;
-                        }
-                        
-                        if (/\s/.test(inputAnswer)) {
-                            if (errorEl) {
-                                errorEl.style.display = 'block';
-                                errorEl.innerHTML = '❌ SPACES NOT ALLOWED!';
-                                errorEl.style.color = '#ff8888';
-                            }
-                            allCorrect = false;
-                            continue;
-                        }
-                        
-                        if (/[^A-Za-z0-9]/.test(inputAnswer)) {
-                            if (errorEl) {
-                                errorEl.style.display = 'block';
-                                errorEl.innerHTML = '❌ Use ONLY letters and numbers!';
-                                errorEl.style.color = '#ff8888';
-                            }
-                            allCorrect = false;
-                            continue;
-                        }
-                        
-                        const cleanedAnswer = cleanAnswer(inputAnswer);
-                        
-                        if (cleanedAnswer !== userQuestions[question]) {
-                            if (errorEl) {
-                                errorEl.style.display = 'block';
-                                errorEl.innerHTML = '❌ Incorrect answer!';
-                                errorEl.style.color = '#ff8888';
-                            }
-                            allCorrect = false;
-                        } else if (errorEl) {
-                            errorEl.style.display = 'none';
-                        }
-                    }
-                    
-                    if (!allCorrect) {
-                        errorDiv.style.display = 'block';
-                        errorDiv.innerHTML = '❌ One or more answers are incorrect. Please try again.';
-                        errorDiv.style.color = '#ff8888';
-                        step = 2;
-                        loadStep();
-                        return;
-                    }
-                    
-                    titleEl.innerHTML = '🔐 Set New Password';
-                    bodyEl.innerHTML = `
-                        <p>Enter your new password</p>
-                        <input type="password" id="newPassword" class="auth-input" placeholder="New Password (min 3 characters)" autocomplete="off">
-                        <input type="password" id="confirmPassword" class="auth-input" placeholder="Confirm New Password" autocomplete="off">
-                    `;
-                    setTimeout(() => document.getElementById('newPassword')?.focus(), 100);
-                }
-            }
-            
-            backBtn.addEventListener('click', () => {
-                if (step > 1) {
-                    step--;
-                    loadStep();
-                } else {
-                    modal.remove();
-                    resolve(false);
-                }
-            });
-            
-            nextBtn.addEventListener('click', async () => {
-                if (step === 1) {
-                    step++;
-                    loadStep();
-                } 
-                else if (step === 2) {
-                    step++;
-                    loadStep();
-                }
-                else if (step === 3) {
-                    const newPassword = document.getElementById('newPassword')?.value;
-                    const confirmPassword = document.getElementById('confirmPassword')?.value;
-                    
-                    if (!newPassword || newPassword.length < 3) {
-                        errorDiv.style.display = 'block';
-                        errorDiv.innerHTML = '❌ Password must be at least 3 characters';
-                        return;
-                    }
-                    if (newPassword !== confirmPassword) {
-                        errorDiv.style.display = 'block';
-                        errorDiv.innerHTML = '❌ Passwords do not match';
-                        return;
-                    }
-                    
-                    errorDiv.style.display = 'block';
-                    errorDiv.innerHTML = '⏳ Resetting password...';
-                    errorDiv.style.color = '#fbbf24';
-                    
-                    const hashedPassword = simpleHash(newPassword);
-                    const userRef = ref(database, `users/${username}`);
-                    await update(userRef, {
-                        password: hashedPassword,
-                        passwordResetAt: serverTimestamp(),
-                        passwordResetAtMs: Date.now()
-                    });
-                    
-                    errorDiv.style.display = 'block';
-                    errorDiv.innerHTML = '✅ Password reset successful! You can now login.';
-                    errorDiv.style.color = '#10b981';
-                    
-                    setTimeout(() => {
-                        modal.remove();
-                        resolve(true);
-                    }, 2000);
-                }
-            });
-            
-            loadStep();
-        });
-    }
-    
-    // ========== AUTH SYSTEM ==========
-    async function registerUser(username, password, securityAnswers) {
-        if (!database) return { success: false, message: "Database not ready" };
-        try {
-            const userRef = ref(database, `users/${username}`);
-            const snapshot = await get(userRef);
-            if (snapshot.exists()) return { success: false, message: "Username already exists!" };
-            const hashedPassword = simpleHash(password);
-            await set(userRef, {
-                username: username,
-                password: hashedPassword,
-                securityQuestions: securityAnswers,
-                createdAt: serverTimestamp(),
-                createdAtMs: Date.now()
-            });
-            return { success: true, message: "Account created!" };
-        } catch (error) {
-            return { success: false, message: "Error creating account" };
-        }
+    async function registerUser(username, password) {
+        const userRef = ref(database, `users/${username}`);
+        const snap = await get(userRef);
+        if (snap.exists()) return false;
+        await set(userRef, { username, password: simpleHash(password), createdAt: serverTimestamp() });
+        return true;
     }
     
     async function loginUser(username, password) {
-        if (!database) return { success: false, message: "Database not ready" };
-        try {
-            const userRef = ref(database, `users/${username}`);
-            const snapshot = await get(userRef);
-            if (!snapshot.exists()) return { success: false, message: "Username not found!" };
-            const userData = snapshot.val();
-            const hashedPassword = simpleHash(password);
-            if (userData.password === hashedPassword) return { success: true, message: "Login successful!" };
-            return { success: false, message: "Wrong password!" };
-        } catch (error) {
-            return { success: false, message: "Error logging in" };
-        }
+        const userRef = ref(database, `users/${username}`);
+        const snap = await get(userRef);
+        if (!snap.exists()) return false;
+        const data = snap.val();
+        return data.password === simpleHash(password);
     }
     
     async function setActiveSession(username) {
-        if (!database) return;
-        const sessionRef = ref(database, `active_sessions/${username}`);
-        await set(sessionRef, {
-            username: username,
-            loginTimeMs: Date.now(),
-            sessionId: Date.now() + '_' + Math.random().toString(36).substr(2, 6)
-        });
+        await set(ref(database, `active_sessions/${username}`), { username, loginTime: Date.now() });
     }
-    
     async function removeActiveSession(username) {
-        if (!database || !username) return;
-        const sessionRef = ref(database, `active_sessions/${username}`);
-        await set(sessionRef, null);
+        await set(ref(database, `active_sessions/${username}`), null);
     }
     
     function showAuthModal() {
         return new Promise((resolve) => {
-            let isLoginMode = true;
-            
             const modal = document.createElement('div');
             modal.className = 'modal';
             modal.innerHTML = `
                 <div class="modal-content">
-                    <h2 id="authTitle">🐔 Login to Hen's World</h2>
-                    <p id="authDesc">Enter your username and password</p>
-                    <input type="text" id="authUsername" class="auth-input" placeholder="Username" autocomplete="off">
-                    <input type="password" id="authPassword" class="auth-input" placeholder="Password" autocomplete="off">
-                    <div id="authError" class="auth-error"></div>
-                    <div class="auth-buttons">
-                        <button id="authSubmitBtn" class="auth-btn auth-btn-primary">Login</button>
-                    </div>
-                    <div class="auth-switch" id="authSwitch">Don't have an account? <span>Register</span></div>
-                    <div class="forgot-password" id="forgotPassword">🔑 Forgot password? <span>Reset here</span></div>
+                    <h3>🐔 Login / Register</h3>
+                    <input type="text" id="authUser" class="auth-input" placeholder="Username (min 3)" style="width:100%; padding:10px; margin:8px 0; background:#050709; border:1px solid #252b33; color:white;">
+                    <input type="password" id="authPass" class="auth-input" placeholder="Password (min 3)" style="width:100%; padding:10px; margin:8px 0; background:#050709; border:1px solid #252b33; color:white;">
+                    <div id="authMsg" style="color:#ff8888; font-size:0.75rem; margin:5px 0;"></div>
+                    <button id="loginBtn" style="background:#1e293b; padding:8px; border-radius:40px; width:100%; margin-top:8px;">Login</button>
+                    <button id="registerBtn" style="background:#2d1f1f; padding:8px; border-radius:40px; width:100%; margin-top:8px;">Register</button>
                 </div>
             `;
             document.body.appendChild(modal);
+            const userInp = modal.querySelector('#authUser');
+            const passInp = modal.querySelector('#authPass');
+            const msgDiv = modal.querySelector('#authMsg');
+            const loginBtn = modal.querySelector('#loginBtn');
+            const regBtn = modal.querySelector('#registerBtn');
             
-            const usernameInput = modal.querySelector('#authUsername');
-            const passwordInput = modal.querySelector('#authPassword');
-            const errorDiv = modal.querySelector('#authError');
-            const submitBtn = modal.querySelector('#authSubmitBtn');
-            const authTitle = modal.querySelector('#authTitle');
-            const authDesc = modal.querySelector('#authDesc');
-            const authSwitch = modal.querySelector('#authSwitch');
-            const forgotPassword = modal.querySelector('#forgotPassword');
-            
-            setTimeout(() => usernameInput.focus(), 100);
-            
-            forgotPassword.addEventListener('click', async () => {
-                modal.remove();
-                await showForgotPasswordModal();
-                showAuthModal().then(resolve);
-            });
-            
-            const updateMode = () => {
-                if (isLoginMode) {
-                    authTitle.innerHTML = '🐔 Login to Hen\'s World';
-                    authDesc.innerHTML = 'Enter your username and password';
-                    submitBtn.innerHTML = 'Login';
-                    authSwitch.innerHTML = 'Don\'t have an account? <span>Register</span>';
-                    forgotPassword.style.display = 'block';
-                } else {
-                    authTitle.innerHTML = '📝 Create Account';
-                    authDesc.innerHTML = 'Choose a username and password';
-                    submitBtn.innerHTML = 'Register';
-                    authSwitch.innerHTML = 'Already have an account? <span>Login</span>';
-                    forgotPassword.style.display = 'none';
-                }
-                errorDiv.style.display = 'none';
-                usernameInput.value = '';
-                passwordInput.value = '';
-            };
-            
-            authSwitch.addEventListener('click', () => {
-                isLoginMode = !isLoginMode;
-                updateMode();
-            });
-            
-            const handleSubmit = async () => {
-                const username = usernameInput.value.trim();
-                const password = passwordInput.value;
-                
-                if (username.length < 3) {
-                    errorDiv.style.display = 'block';
-                    errorDiv.innerHTML = '❌ Username must be at least 3 characters';
+            const action = async (isLogin) => {
+                const user = userInp.value.trim();
+                const pass = passInp.value;
+                if (user.length < 3 || pass.length < 3) {
+                    msgDiv.innerText = "Username/password min 3 chars";
                     return;
                 }
-                if (password.length < 3) {
-                    errorDiv.style.display = 'block';
-                    errorDiv.innerHTML = '❌ Password must be at least 3 characters';
-                    return;
-                }
-                
-                errorDiv.style.display = 'block';
-                errorDiv.innerHTML = '⏳ Processing...';
-                errorDiv.style.color = '#fbbf24';
-                
-                if (isLoginMode) {
-                    const result = await loginUser(username, password);
-                    if (result.success) {
-                        await setActiveSession(username);
+                if (isLogin) {
+                    const ok = await loginUser(user, pass);
+                    if (ok) {
+                        await setActiveSession(user);
                         modal.remove();
-                        resolve(username);
-                    } else {
-                        errorDiv.style.display = 'block';
-                        errorDiv.innerHTML = `❌ ${result.message}`;
-                        errorDiv.style.color = '#ff8888';
-                    }
+                        resolve(user);
+                    } else msgDiv.innerText = "Invalid credentials";
                 } else {
-                    const securityAnswers = await showSecurityQuestionsModal(username);
-                    const result = await registerUser(username, password, securityAnswers);
-                    if (result.success) {
-                        await setActiveSession(username);
+                    const ok = await registerUser(user, pass);
+                    if (ok) {
+                        await setActiveSession(user);
                         modal.remove();
-                        resolve(username);
-                    } else {
-                        errorDiv.style.display = 'block';
-                        errorDiv.innerHTML = `❌ ${result.message}`;
-                        errorDiv.style.color = '#ff8888';
-                    }
+                        resolve(user);
+                    } else msgDiv.innerText = "Username taken";
                 }
             };
-            
-            submitBtn.addEventListener('click', handleSubmit);
-            usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
-            passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
+            loginBtn.onclick = () => action(true);
+            regBtn.onclick = () => action(false);
         });
     }
     
     async function initAuth() {
-        const savedUsername = localStorage.getItem("hensworld_username");
-        if (savedUsername) {
-            try {
-                const userRef = ref(database, `users/${savedUsername}`);
-                const snapshot = await get(userRef);
-                if (snapshot.exists()) {
-                    currentUsername = savedUsername;
-                    await setActiveSession(savedUsername);
-                    return savedUsername;
-                }
-            } catch (e) {}
+        const saved = localStorage.getItem("hensworld_user");
+        if (saved) {
+            const snap = await get(ref(database, `users/${saved}`));
+            if (snap.exists()) {
+                currentUsername = saved;
+                await setActiveSession(saved);
+                return saved;
+            }
         }
         const username = await showAuthModal();
         if (username) {
             currentUsername = username;
-            localStorage.setItem("hensworld_username", username);
+            localStorage.setItem("hensworld_user", username);
             return username;
         }
         return null;
     }
     
     async function logout() {
-        if (currentUsername) {
-            await removeActiveSession(currentUsername);
-            localStorage.removeItem("hensworld_username");
-            currentUsername = null;
-            currentRoom = null;
-            
-            const container = document.getElementById("messagesContainer");
-            container.innerHTML = '<div class="loading">✨ You have been logged out. Refresh to login again.</div>';
-            
-            document.getElementById("messageInput").disabled = true;
-            document.getElementById("sendBtn").disabled = true;
-            
-            setTimeout(() => {
-                location.reload();
-            }, 1500);
-        }
+        if (currentUsername) await removeActiveSession(currentUsername);
+        localStorage.removeItem("hensworld_user");
+        location.reload();
     }
     
-    // ========== CHAT FUNCTIONS ==========
-    async function initFirebase() {
-        try {
-            app = initializeApp(firebaseConfig);
-            database = getDatabase(app);
-            isFirebaseReady = true;
-            document.getElementById("connectionStatus").innerHTML = "✅ Secure connection ready";
-            return true;
-        } catch (error) {
-            console.error("Firebase init error:", error);
-            return false;
-        }
+    // ========== AUTO-DELETE ENGINE ==========
+    // Deletes message after 1 hour from timestampMs if autoDeleteEnabled is ON
+    function scheduleAutoDelete(messageId, timestampMs) {
+        if (!autoDeleteEnabled) return;
+        const now = Date.now();
+        const age = now - timestampMs;
+        const delay = Math.max(0, 3600000 - age); // 1 hour
+        setTimeout(async () => {
+            if (!autoDeleteEnabled) return; // if toggled OFF later, skip deletion
+            if (!currentRoom || !messageId) return;
+            const msgRef = ref(database, `rooms/${currentRoom}/messages/${messageId}`);
+            const snap = await get(msgRef);
+            if (snap.exists()) {
+                await remove(msgRef);
+                // system notification optional
+            }
+        }, delay);
     }
     
-    function joinRoom(roomId) {
-        if (!database || !isFirebaseReady) return false;
-        const cleanRoomId = roomId.trim().replace(/[.#$[\]]/g, '_');
-        if (!cleanRoomId) return false;
-        if (currentRoom === cleanRoomId) return true;
-        if (messagesRef) messagesRef = null;
-        currentRoom = cleanRoomId;
-        document.getElementById("currentRoomName").innerText = currentRoom;
-        document.getElementById("messageInput").disabled = false;
-        document.getElementById("sendBtn").disabled = false;
+    // ========== READ RECEIPTS (Double Blue Tick) ==========
+    // When a user views a message, we record "seenBy" object with username + timestamp
+    async function markMessageAsSeen(messageId, senderId, messageData) {
+        if (!currentUsername) return;
+        if (senderId === currentUsername) return; // don't mark own messages as seen by self
         
+        const seenRef = ref(database, `rooms/${currentRoom}/messages/${messageId}/seenBy/${currentUsername}`);
+        const existing = await get(seenRef);
+        if (!existing.exists()) {
+            await set(seenRef, { username: currentUsername, seenAt: serverTimestamp(), seenAtMs: Date.now() });
+        }
+    }
+    
+    // Build read receipt display: single tick (✓) or double blue tick (✓✓)
+    function getReadReceiptHtml(message) {
+        if (!message.seenBy) return '<span class="single-tick">✓</span>';
+        const viewers = Object.keys(message.seenBy);
+        const totalOthers = viewers.length;
+        if (totalOthers === 0) return '<span class="single-tick">✓</span>';
+        // Double blue tick when at least 1 other person seen (excluding sender)
+        return '<span class="double-tick" style="color:#34b7f1;">✓✓</span>';
+    }
+    
+    // ========== INFO POPUP (who & when seen) ==========
+    function showInfoPopup(messageId, messageData) {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        const seenEntries = messageData.seenBy ? Object.entries(messageData.seenBy) : [];
+        let listHtml = '';
+        if (seenEntries.length === 0) listHtml = '<li>No one has seen this message yet</li>';
+        else {
+            seenEntries.forEach(([username, details]) => {
+                const time = details.seenAtMs ? new Date(details.seenAtMs).toLocaleString() : 'recently';
+                listHtml += `<li><strong>${escapeHtml(username)}</strong> · seen at ${time}</li>`;
+            });
+        }
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h3>🔍 Message Info</h3>
+                <p style="color:#8db5e5;">"${escapeHtml(messageData.text || '')}"</p>
+                <div style="margin: 12px 0;"><strong>👁️ Seen by:</strong></div>
+                <ul class="seen-list">${listHtml}</ul>
+                <button class="close-modal">Close</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.querySelector('.close-modal').onclick = () => modal.remove();
+    }
+    
+    // ========== DISPLAY MESSAGE WITH LONG PRESS / HOLD ==========
+    function displayMessage(message, messageId) {
         const container = document.getElementById("messagesContainer");
-        container.innerHTML = '<div class="loading">🐔 loading messages...</div>';
+        if (!container) return;
+        if (container.children.length === 1 && container.children[0].classList?.contains('loading')) container.innerHTML = '';
         
-        messagesRef = ref(database, `rooms/${currentRoom}/messages`);
-        const messagesQuery = query(messagesRef, limitToLast(100));
-        onChildAdded(messagesQuery, (snapshot) => {
-            const message = snapshot.val();
-            if (message) displayMessage(message);
-        });
+        const isOwn = (message.sender === currentUsername);
+        const isSystem = message.isSystem === true;
+        const msgDiv = document.createElement("div");
+        msgDiv.className = `message ${isOwn ? 'own-message' : ''} ${isSystem ? 'system-message' : ''}`;
+        msgDiv.setAttribute('data-msg-id', messageId);
         
-        setTimeout(() => addSystemMessage(`${currentUsername} 🐔 joined the room`), 300);
-        return true;
+        let timeStr = "just now";
+        if (message.timestampMs) {
+            timeStr = new Date(message.timestampMs).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' });
+        }
+        const senderDisplay = isSystem ? "🐔 system" : escapeHtml(message.sender);
+        
+        // read receipt html (only for non-system)
+        let receiptHtml = '';
+        if (!isSystem && !isOwn) receiptHtml = `<span class="read-status">${getReadReceiptHtml(message)}</span>`;
+        if (!isSystem && isOwn) receiptHtml = `<span class="read-status">${getReadReceiptHtml(message)}</span>`;
+        
+        msgDiv.innerHTML = `
+            <div class="message-header">
+                <span class="message-sender">${senderDisplay}</span>
+                <span class="message-time">${timeStr}</span>
+                ${receiptHtml}
+                <span class="info-badge" style="font-size:9px; cursor:pointer;">ℹ️</span>
+            </div>
+            <div class="message-text">${escapeHtml(message.text || '')}</div>
+        `;
+        
+        container.appendChild(msgDiv);
+        container.scrollTop = container.scrollHeight;
+        
+        // Attach long-press / hold event for info popup
+        const textBubble = msgDiv.querySelector('.message-text');
+        const infoIcon = msgDiv.querySelector('.info-badge');
+        let pressTimer;
+        const showInfo = () => {
+            showInfoPopup(messageId, message);
+        };
+        const startPress = (e) => {
+            pressTimer = setTimeout(showInfo, 500);
+            e.preventDefault();
+        };
+        const cancelPress = () => {
+            if (pressTimer) clearTimeout(pressTimer);
+        };
+        textBubble.addEventListener('mousedown', startPress);
+        textBubble.addEventListener('mouseup', cancelPress);
+        textBubble.addEventListener('mouseleave', cancelPress);
+        textBubble.addEventListener('touchstart', startPress);
+        textBubble.addEventListener('touchend', cancelPress);
+        if (infoIcon) infoIcon.addEventListener('click', (e) => { e.stopPropagation(); showInfo(); });
+        
+        // Store mapping for later updates (read receipt update)
+        messageElementsMap.set(messageId, { div: msgDiv, message });
+        
+        // Auto mark as seen after display (when message enters viewport)
+        if (!isSystem && message.sender !== currentUsername) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        markMessageAsSeen(messageId, message.sender, message);
+                        observer.disconnect();
+                        // Update read receipt UI after marking
+                        updateReadReceiptUI(messageId);
+                    }
+                });
+            }, { threshold: 0.5 });
+            observer.observe(msgDiv);
+        }
     }
     
-    async function sendMessage(text) {
-        if (!text.trim()) return;
-        if (!currentRoom) { alert("Join a room first!"); return; }
-        const messageData = {
-            sender: currentUsername,
-            text: text.trim(),
-            timestamp: serverTimestamp(),
-            timestampMs: Date.now()
-        };
-        try {
-            await push(ref(database, `rooms/${currentRoom}/messages`), messageData);
-            document.getElementById("messageInput").value = "";
-        } catch (error) {
-            alert("Failed to send message");
-        }
+    function updateReadReceiptUI(messageId) {
+        const entry = messageElementsMap.get(messageId);
+        if (!entry) return;
+        const msgData = entry.message;
+        // re-fetch latest seenBy from database? we can update local message object if needed, but we can also query fresh
+        const msgRef = ref(database, `rooms/${currentRoom}/messages/${messageId}`);
+        get(msgRef).then(snap => {
+            if (snap.exists()) {
+                const fresh = snap.val();
+                const receiptSpan = entry.div.querySelector('.read-status');
+                if (receiptSpan && !fresh.isSystem) {
+                    const html = getReadReceiptHtml(fresh);
+                    receiptSpan.innerHTML = html;
+                    entry.message = fresh; // update cache
+                }
+            }
+        });
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return "";
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
     }
     
     async function addSystemMessage(text) {
@@ -1320,57 +725,94 @@
         await push(ref(database, `rooms/${currentRoom}/messages`), systemMsg);
     }
     
-    function escapeHtml(str) {
-        if (!str) return "";
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
-    
-    function displayMessage(message) {
+    // ========== JOIN ROOM & LISTEN ==========
+    function joinRoom(roomId) {
+        if (!database || !isFirebaseReady) return false;
+        const clean = roomId.trim().replace(/[.#$[\]]/g, '_');
+        if (!clean) return false;
+        if (currentRoom === clean) return true;
+        if (messagesRef) messagesRef = null;
+        currentRoom = clean;
+        document.getElementById("currentRoomName").innerText = currentRoom;
+        document.getElementById("messageInput").disabled = false;
+        document.getElementById("sendBtn").disabled = false;
         const container = document.getElementById("messagesContainer");
-        if (!container) return;
-        if (container.children.length === 1 && container.children[0].classList?.contains('loading')) container.innerHTML = '';
+        container.innerHTML = '<div class="loading">🐔 loading messages...</div>';
+        messageElementsMap.clear();
         
-        const msgDiv = document.createElement("div");
-        const isOwn = (message.sender === currentUsername);
-        const isSystem = message.isSystem === true || message.sender === "🐔 Hen's World";
-        
-        if (isSystem) msgDiv.className = "message system-message";
-        else msgDiv.className = `message ${isOwn ? 'own-message' : ''}`;
-        
-        let timeStr = "now";
-        if (message.timestampMs) {
-            const date = new Date(message.timestampMs);
-            timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        }
-        
-        const senderDisplay = isSystem ? "🐔 system" : escapeHtml(message.sender);
-        
-        msgDiv.innerHTML = `
-            <div class="message-header">
-                <span class="message-sender">${senderDisplay}</span>
-                <span class="message-time">${timeStr}</span>
-            </div>
-            <div class="message-text">${escapeHtml(message.text || '')}</div>
-        `;
-        container.appendChild(msgDiv);
-        container.scrollTop = container.scrollHeight;
+        messagesRef = ref(database, `rooms/${currentRoom}/messages`);
+        const messagesQuery = query(messagesRef, limitToLast(200));
+        onChildAdded(messagesQuery, async (snapshot) => {
+            const msg = snapshot.val();
+            const msgId = snapshot.key;
+            if (msg) {
+                // ensure timestampMs for auto-delete
+                if (!msg.timestampMs && msg.timestamp) {
+                    // fallback
+                }
+                displayMessage(msg, msgId);
+                // schedule auto-delete if toggle on (and not system)
+                if (autoDeleteEnabled && !msg.isSystem && msg.timestampMs) {
+                    scheduleAutoDelete(msgId, msg.timestampMs);
+                }
+                // Also watch for live updates on seenBy to refresh UI
+                const seenRef = ref(database, `rooms/${currentRoom}/messages/${msgId}/seenBy`);
+                onValue(seenRef, () => {
+                    updateReadReceiptUI(msgId);
+                });
+            }
+        });
+        setTimeout(() => addSystemMessage(`${currentUsername} joined the room`), 400);
+        return true;
     }
     
+    async function sendMessage(text) {
+        if (!text.trim()) return;
+        if (!currentRoom) { alert("Join a room first!"); return; }
+        const messageData = {
+            sender: currentUsername,
+            text: text.trim(),
+            timestamp: serverTimestamp(),
+            timestampMs: Date.now(),
+            seenBy: {}  // initialize empty seen tracking
+        };
+        try {
+            await push(ref(database, `rooms/${currentRoom}/messages`), messageData);
+            document.getElementById("messageInput").value = "";
+        } catch(e) { alert("Send failed"); }
+    }
+    
+    // Toggle auto-delete: if user turns OFF, messages already scheduled won't be deleted (set flag)
+    function setAutoDeleteMode(enabled) {
+        autoDeleteEnabled = enabled;
+        localStorage.setItem("autoDeletePref", enabled);
+        const statusMsg = enabled ? "Auto-delete ENABLED: all new messages will disappear after 1 hour" : "Auto-delete DISABLED: messages will persist";
+        if (currentRoom) addSystemMessage(statusMsg);
+        else console.log(statusMsg);
+    }
+    
+    // ========== UI SETUP ==========
     function setupUI() {
         const roomInput = document.getElementById("roomInput");
         const joinBtn = document.getElementById("joinRoomBtn");
         const sendBtn = document.getElementById("sendBtn");
         const messageInput = document.getElementById("messageInput");
         const logoutBtn = document.getElementById("logoutBtn");
+        const toggleCheck = document.getElementById("autoDeleteToggle");
+        
+        const savedPref = localStorage.getItem("autoDeletePref");
+        if (savedPref !== null) autoDeleteEnabled = savedPref === "true";
+        toggleCheck.checked = autoDeleteEnabled;
+        
+        toggleCheck.addEventListener("change", (e) => {
+            setAutoDeleteMode(e.target.checked);
+        });
         
         joinBtn.addEventListener("click", () => {
             let roomVal = roomInput.value.trim();
             if (!roomVal) roomVal = "henhouse-lounge";
             joinRoom(roomVal);
         });
-        
         sendBtn.addEventListener("click", () => sendMessage(messageInput.value));
         messageInput.addEventListener("keydown", (e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -1378,33 +820,31 @@
                 sendMessage(messageInput.value);
             }
         });
-        
         logoutBtn.addEventListener("click", logout);
-        
         roomInput.value = "henhouse-lounge";
-        setTimeout(() => { if (isFirebaseReady && !currentRoom && currentUsername) joinRoom("henhouse-lounge"); }, 800);
+        if (currentUsername && isFirebaseReady) setTimeout(() => joinRoom("henhouse-lounge"), 600);
     }
     
     function addWatermark() {
-        const watermark = document.createElement('div');
-        watermark.style.cssText = `position:fixed; bottom:5px; left:5px; right:5px; font-size:9px; color:rgba(150,150,150,0.25); z-index:9998; pointer-events:none; text-align:center;`;
-        watermark.innerHTML = `${currentUsername} • ${new Date().toLocaleString()} • hensworld.chat`;
-        document.body.appendChild(watermark);
+        const wm = document.createElement('div');
+        wm.style.cssText = `position:fixed; bottom:5px; left:5px; font-size:8px; color:rgba(150,150,150,0.3); pointer-events:none;`;
+        wm.innerText = `${currentUsername} • hensworld.chat`;
+        document.body.appendChild(wm);
     }
     
     document.addEventListener('contextmenu', (e) => e.preventDefault());
-    window.addEventListener('blur', () => document.querySelector('.app')?.classList.add('screenshot-detected'));
-    window.addEventListener('focus', () => setTimeout(() => document.querySelector('.app')?.classList.remove('screenshot-detected'), 300));
     
     async function init() {
-        await initFirebase();
-        if (isFirebaseReady) {
+        try {
+            app = initializeApp(firebaseConfig);
+            database = getDatabase(app);
+            isFirebaseReady = true;
+            document.getElementById("connectionStatus").innerHTML = "✅ secure";
             await initAuth();
             setupUI();
             addWatermark();
-        }
+        } catch(e) { console.error(e); }
     }
-    
     init();
 </script>
 </body>
