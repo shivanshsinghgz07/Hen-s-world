@@ -115,7 +115,6 @@
             display: flex;
             gap: 8px;
         }
-        /* .online-btn removed — button gone */
         .auto-delete-select {
             background: #1e293b;
             border: 1px solid #2f3a48;
@@ -448,7 +447,6 @@
             color: #6c7a89;
         }
 
-        /* Modal Styles (unchanged) */
         .modal {
             position: fixed;
             top: 0;
@@ -598,22 +596,6 @@
             transition: filter 0.3s;
         }
         
-        .screenshot-warning {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.95);
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            gap: 20px;
-            animation: fadeIn 0.2s;
-        }
-
         .info-popup {
             position: fixed;
             top: 50%;
@@ -676,7 +658,7 @@
         <button id="logoutBtn" class="logout-btn">🚪 Logout</button>
     </div>
 
-    <!-- User bar: ONLINE BUTTON REMOVED as requested -->
+    <!-- User bar with auto-delete only -->
     <div class="user-bar">
         <div class="user-info">
             <span>👤</span>
@@ -733,17 +715,16 @@
         appId: "1:359865594843:web:3da81e9f7c00bba183adfe"
     };
     
-    let app, database;
-    let messagesRef = null;
+    let database;
     let currentRoom = null;
     let currentUsername = null;
     let isFirebaseReady = false;
     let autoDeleteMode = "off";
     let autoDeleteInterval = null;
-    let messagesListener = null;     // for onChildAdded cleanup
-    let statusListener = null;       // for onValue cleanup (fix memory/duplicate)
+    let messagesListener = null;
+    let statusListener = null;
     
-    // Security Questions (unchanged)
+    // Security Questions array
     const securityQuestions = [
         "What is your mother's maiden name?",
         "What was the name of your first pet?",
@@ -774,44 +755,630 @@
     
     function cleanAnswer(answer) {
         if (!answer) return "";
-        let cleaned = answer.toUpperCase().replace(/[^A-Z0-9]/g, '');
-        cleaned = cleaned.replace(/\s/g, '');
-        return cleaned;
+        return answer.toUpperCase().replace(/[^A-Z0-9]/g, '');
     }
     
-    // ========== AUTH SYSTEM (unchanged but robust) ==========
-    // (all auth functions preserved for brevity, same as original)
-    async function showSecurityQuestionsModal(username) { /* unchanged */ return new Promise((resolve) => { /* ... full code ... */ resolve({}); }); }
-    async function showForgotPasswordModal() { /* unchanged */ return new Promise((resolve) => { resolve(false); }); }
-    async function registerUser(username, password, securityAnswers) { /* unchanged */ return { success: false }; }
-    async function loginUser(username, password) { /* unchanged */ return { success: false }; }
-    async function setActiveSession(username) { if(database) await set(ref(database, `active_sessions/${username}`), { username, loginTimeMs: Date.now(), sessionId: Date.now() + '_' + Math.random().toString(36).substr(2, 6) }); }
-    async function removeActiveSession(username) { if(database && username) await set(ref(database, `active_sessions/${username}`), null); }
+    // ---------- AUTH MODAL (fully functional) ----------
+    async function showSecurityQuestionsModal(username) {
+        return new Promise((resolve) => {
+            const shuffled = [...securityQuestions];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            const selectedQuestions = shuffled.slice(0, 3);
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h2>🔐 Security Questions</h2>
+                    <div class="security-note">
+                        ⚠️ <strong>IMPORTANT RULES:</strong><br>
+                        • Use ONLY letters (A-Z) and numbers (0-9)<br>
+                        • NO spaces allowed<br>
+                        • Answers will be stored in CAPITAL LETTERS
+                    </div>
+                    <p>Please answer these 3 security questions:</p>
+                    <div id="questionsContainer"></div>
+                    <div id="securityError" class="auth-error"></div>
+                    <div class="auth-buttons">
+                        <button id="securitySubmitBtn" class="auth-btn auth-btn-primary">Submit & Continue</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            const container = modal.querySelector('#questionsContainer');
+            const errorDiv = modal.querySelector('#securityError');
+            const submitBtn = modal.querySelector('#securitySubmitBtn');
+            const answers = {};
+            const answerInputs = [];
+            
+            selectedQuestions.forEach((question, index) => {
+                const div = document.createElement('div');
+                div.style.marginBottom = '15px';
+                div.innerHTML = `
+                    <label style="color: #8db5e5; font-size: 0.75rem; margin-bottom: 5px; display: block;">${index + 1}. ${question}</label>
+                    <input type="text" id="answer_${index}" class="auth-input" placeholder="Your answer (A-Z, 0-9 only - NO spaces)" style="margin-bottom: 5px;">
+                    <div style="font-size: 0.65rem; margin-top: -10px; margin-bottom: 10px; display: none;" id="error_${index}" class="answer-error"></div>
+                `;
+                container.appendChild(div);
+                const input = div.querySelector(`#answer_${index}`);
+                const inputError = div.querySelector(`#error_${index}`);
+                answers[question] = input;
+                answerInputs.push({ input, error: inputError });
+                
+                input.addEventListener('input', function() {
+                    const value = this.value;
+                    const hasSpace = /\s/.test(value);
+                    const hasSpecial = /[^A-Za-z0-9]/.test(value);
+                    
+                    if (hasSpace) {
+                        inputError.style.display = 'block';
+                        inputError.innerHTML = '❌ SPACES NOT ALLOWED!';
+                        inputError.style.color = '#ff8888';
+                        this.style.borderColor = '#ff4444';
+                    } else if (hasSpecial) {
+                        inputError.style.display = 'block';
+                        inputError.innerHTML = '❌ Use ONLY letters and numbers!';
+                        inputError.style.color = '#ff8888';
+                        this.style.borderColor = '#ff4444';
+                    } else {
+                        const cleaned = cleanAnswer(value);
+                        if (cleaned.length > 0) {
+                            inputError.style.display = 'block';
+                            inputError.style.color = '#10b981';
+                            inputError.innerHTML = `✅ Will be stored as: "${cleaned}"`;
+                            this.style.borderColor = '#252b33';
+                        } else if (value.length > 0) {
+                            inputError.style.display = 'block';
+                            inputError.innerHTML = '❌ Invalid characters detected!';
+                            inputError.style.color = '#ff8888';
+                            this.style.borderColor = '#ff4444';
+                        } else {
+                            inputError.style.display = 'none';
+                            this.style.borderColor = '#252b33';
+                        }
+                    }
+                });
+            });
+            
+            const handleSubmit = async () => {
+                const securityAnswers = {};
+                let valid = true;
+                
+                errorDiv.style.display = 'none';
+                
+                for (let i = 0; i < selectedQuestions.length; i++) {
+                    const question = selectedQuestions[i];
+                    const answer = answers[question].value;
+                    const inputElement = answers[question];
+                    const inputError = answerInputs[i].error;
+                    
+                    if (!answer || answer.trim().length === 0) {
+                        inputError.style.display = 'block';
+                        inputError.innerHTML = '❌ This field is required!';
+                        inputError.style.color = '#ff8888';
+                        inputElement.style.borderColor = '#ff4444';
+                        valid = false;
+                        continue;
+                    }
+                    
+                    if (/\s/.test(answer)) {
+                        inputError.style.display = 'block';
+                        inputError.innerHTML = '❌ SPACES ARE NOT ALLOWED! Please remove spaces.';
+                        inputError.style.color = '#ff8888';
+                        inputElement.style.borderColor = '#ff4444';
+                        valid = false;
+                        continue;
+                    }
+                    
+                    if (/[^A-Za-z0-9]/.test(answer)) {
+                        inputError.style.display = 'block';
+                        inputError.innerHTML = '❌ Only letters (A-Z) and numbers (0-9) allowed!';
+                        inputError.style.color = '#ff8888';
+                        inputElement.style.borderColor = '#ff4444';
+                        valid = false;
+                        continue;
+                    }
+                    
+                    const cleaned = cleanAnswer(answer);
+                    if (cleaned.length < 2) {
+                        inputError.style.display = 'block';
+                        inputError.innerHTML = '❌ Answer must be at least 2 characters!';
+                        inputError.style.color = '#ff8888';
+                        inputElement.style.borderColor = '#ff4444';
+                        valid = false;
+                        continue;
+                    }
+                    
+                    securityAnswers[question] = cleaned;
+                }
+                
+                if (valid) {
+                    errorDiv.style.display = 'none';
+                    modal.remove();
+                    resolve(securityAnswers);
+                } else {
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerHTML = '❌ Please fix the errors above before continuing.';
+                    errorDiv.style.color = '#ff8888';
+                    const firstError = document.querySelector('.answer-error[style*="display: block"]');
+                    if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            };
+            
+            submitBtn.addEventListener('click', handleSubmit);
+            answerInputs.forEach(({ input }) => {
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') handleSubmit();
+                });
+            });
+        });
+    }
     
-    // (since the full auth functions are long but present, we need to copy them from original? To keep answer size, we will embed them fully.)
-    // For the sake of completeness, I'll include the exact same auth logic from the user's code, just to avoid any missing definitions.
-    // Actually to save tokens, I'll keep them identical. They are unchanged.
+    async function showForgotPasswordModal() {
+        return new Promise((resolve) => {
+            let step = 1;
+            let username = '';
+            let userQuestions = {};
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content" id="forgotModalContent">
+                    <h2 id="forgotTitle">🔐 Reset Password</h2>
+                    <div id="forgotBody"></div>
+                    <div id="forgotError" class="auth-error"></div>
+                    <div class="auth-buttons">
+                        <button id="forgotBackBtn" class="auth-btn auth-btn-secondary">Back</button>
+                        <button id="forgotNextBtn" class="auth-btn auth-btn-primary">Next</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            const titleEl = modal.querySelector('#forgotTitle');
+            const bodyEl = modal.querySelector('#forgotBody');
+            const errorDiv = modal.querySelector('#forgotError');
+            const backBtn = modal.querySelector('#forgotBackBtn');
+            const nextBtn = modal.querySelector('#forgotNextBtn');
+            
+            async function loadStep() {
+                errorDiv.style.display = 'none';
+                
+                if (step === 1) {
+                    titleEl.innerHTML = '🔐 Enter Username';
+                    bodyEl.innerHTML = `
+                        <p>Enter your username to reset password</p>
+                        <input type="text" id="resetUsername" class="auth-input" placeholder="Username" autocomplete="off">
+                    `;
+                    setTimeout(() => document.getElementById('resetUsername')?.focus(), 100);
+                } 
+                else if (step === 2) {
+                    const usernameInput = document.getElementById('resetUsername');
+                    username = usernameInput?.value.trim();
+                    
+                    if (!username || username.length < 3) {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = '❌ Please enter a valid username';
+                        step = 1;
+                        loadStep();
+                        return;
+                    }
+                    
+                    const userRef = ref(database, `users/${username}`);
+                    const snapshot = await get(userRef);
+                    
+                    if (!snapshot.exists()) {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = '❌ Username not found!';
+                        step = 1;
+                        loadStep();
+                        return;
+                    }
+                    
+                    const userData = snapshot.val();
+                    if (!userData.securityQuestions) {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = '❌ No security questions found for this account';
+                        step = 1;
+                        loadStep();
+                        return;
+                    }
+                    
+                    userQuestions = userData.securityQuestions;
+                    const questions = Object.keys(userQuestions);
+                    
+                    let html = `<p>Answer these security questions to verify your identity:</p>
+                                <div class="security-note" style="margin-bottom: 15px;">
+                                    ⚠️ Use ONLY letters and numbers. NO spaces. Answers are case-sensitive (use CAPITALS).
+                                </div>`;
+                    questions.forEach((question, index) => {
+                        html += `
+                            <div style="margin-bottom: 15px;">
+                                <label style="color: #8db5e5; font-size: 0.75rem; margin-bottom: 5px; display: block;">${index + 1}. ${question}</label>
+                                <input type="text" id="secAnswer_${index}" class="auth-input" placeholder="Your answer (A-Z, 0-9 only)" style="margin-bottom: 5px;">
+                                <div style="font-size: 0.6rem; color: #ff8888;" id="secError_${index}" class="answer-error"></div>
+                            </div>
+                        `;
+                    });
+                    bodyEl.innerHTML = html;
+                    
+                    questions.forEach((_, index) => {
+                        const input = document.getElementById(`secAnswer_${index}`);
+                        const errorEl = document.getElementById(`secError_${index}`);
+                        
+                        if (input) {
+                            input.addEventListener('input', function() {
+                                const value = this.value;
+                                const hasSpace = /\s/.test(value);
+                                const hasSpecial = /[^A-Za-z0-9]/.test(value);
+                                
+                                if (hasSpace) {
+                                    errorEl.style.display = 'block';
+                                    errorEl.innerHTML = '❌ SPACES NOT ALLOWED!';
+                                    this.style.borderColor = '#ff4444';
+                                } else if (hasSpecial) {
+                                    errorEl.style.display = 'block';
+                                    errorEl.innerHTML = '❌ Use ONLY letters and numbers!';
+                                    this.style.borderColor = '#ff4444';
+                                } else {
+                                    errorEl.style.display = 'none';
+                                    this.style.borderColor = '#252b33';
+                                }
+                            });
+                        }
+                    });
+                    
+                    setTimeout(() => document.getElementById('secAnswer_0')?.focus(), 100);
+                } 
+                else if (step === 3) {
+                    const questions = Object.keys(userQuestions);
+                    let allCorrect = true;
+                    
+                    for (let i = 0; i < questions.length; i++) {
+                        const question = questions[i];
+                        const inputAnswer = document.getElementById(`secAnswer_${i}`)?.value;
+                        const errorEl = document.getElementById(`secError_${i}`);
+                        
+                        if (!inputAnswer || inputAnswer.trim().length === 0) {
+                            if (errorEl) {
+                                errorEl.style.display = 'block';
+                                errorEl.innerHTML = '❌ This field is required!';
+                                errorEl.style.color = '#ff8888';
+                            }
+                            allCorrect = false;
+                            continue;
+                        }
+                        
+                        if (/\s/.test(inputAnswer)) {
+                            if (errorEl) {
+                                errorEl.style.display = 'block';
+                                errorEl.innerHTML = '❌ SPACES NOT ALLOWED!';
+                                errorEl.style.color = '#ff8888';
+                            }
+                            allCorrect = false;
+                            continue;
+                        }
+                        
+                        if (/[^A-Za-z0-9]/.test(inputAnswer)) {
+                            if (errorEl) {
+                                errorEl.style.display = 'block';
+                                errorEl.innerHTML = '❌ Use ONLY letters and numbers!';
+                                errorEl.style.color = '#ff8888';
+                            }
+                            allCorrect = false;
+                            continue;
+                        }
+                        
+                        const cleanedAnswer = cleanAnswer(inputAnswer);
+                        
+                        if (cleanedAnswer !== userQuestions[question]) {
+                            if (errorEl) {
+                                errorEl.style.display = 'block';
+                                errorEl.innerHTML = '❌ Incorrect answer!';
+                                errorEl.style.color = '#ff8888';
+                            }
+                            allCorrect = false;
+                        } else if (errorEl) {
+                            errorEl.style.display = 'none';
+                        }
+                    }
+                    
+                    if (!allCorrect) {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = '❌ One or more answers are incorrect. Please try again.';
+                        errorDiv.style.color = '#ff8888';
+                        step = 2;
+                        loadStep();
+                        return;
+                    }
+                    
+                    titleEl.innerHTML = '🔐 Set New Password';
+                    bodyEl.innerHTML = `
+                        <p>Enter your new password</p>
+                        <input type="password" id="newPassword" class="auth-input" placeholder="New Password (min 3 characters)" autocomplete="off">
+                        <input type="password" id="confirmPassword" class="auth-input" placeholder="Confirm New Password" autocomplete="off">
+                    `;
+                    setTimeout(() => document.getElementById('newPassword')?.focus(), 100);
+                }
+            }
+            
+            backBtn.addEventListener('click', () => {
+                if (step > 1) {
+                    step--;
+                    loadStep();
+                } else {
+                    modal.remove();
+                    resolve(false);
+                }
+            });
+            
+            nextBtn.addEventListener('click', async () => {
+                if (step === 1) {
+                    step++;
+                    loadStep();
+                } 
+                else if (step === 2) {
+                    step++;
+                    loadStep();
+                }
+                else if (step === 3) {
+                    const newPassword = document.getElementById('newPassword')?.value;
+                    const confirmPassword = document.getElementById('confirmPassword')?.value;
+                    
+                    if (!newPassword || newPassword.length < 3) {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = '❌ Password must be at least 3 characters';
+                        return;
+                    }
+                    if (newPassword !== confirmPassword) {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = '❌ Passwords do not match';
+                        return;
+                    }
+                    
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerHTML = '⏳ Resetting password...';
+                    errorDiv.style.color = '#fbbf24';
+                    
+                    const hashedPassword = simpleHash(newPassword);
+                    const userRef = ref(database, `users/${username}`);
+                    await update(userRef, {
+                        password: hashedPassword,
+                        passwordResetAt: serverTimestamp(),
+                        passwordResetAtMs: Date.now()
+                    });
+                    
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerHTML = '✅ Password reset successful! You can now login.';
+                    errorDiv.style.color = '#10b981';
+                    
+                    setTimeout(() => {
+                        modal.remove();
+                        resolve(true);
+                    }, 2000);
+                }
+            });
+            
+            loadStep();
+        });
+    }
     
-    // Quick summary: The auth functions remain exactly as provided in original code, we just fix logout and listener.
-    // For brevity, I'll copy them directly from original (they are unchanged and working).
+    async function registerUser(username, password, securityAnswers) {
+        if (!database) return { success: false, message: "Database not ready" };
+        try {
+            const userRef = ref(database, `users/${username}`);
+            const snapshot = await get(userRef);
+            if (snapshot.exists()) return { success: false, message: "Username already exists!" };
+            const hashedPassword = simpleHash(password);
+            await set(userRef, {
+                username: username,
+                password: hashedPassword,
+                securityQuestions: securityAnswers,
+                createdAt: serverTimestamp(),
+                createdAtMs: Date.now()
+            });
+            return { success: true, message: "Account created!" };
+        } catch (error) {
+            return { success: false, message: "Error creating account" };
+        }
+    }
     
-    // --- AUTH IMPLEMENTATION (exact copy from original) ---
-    function showSecurityQuestionsModal(username) { return new Promise((resolve) => { const shuffled = [...securityQuestions]; for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; } const selectedQuestions = shuffled.slice(0, 3); const modal = document.createElement('div'); modal.className = 'modal'; modal.innerHTML = `<div class="modal-content"><h2>🔐 Security Questions</h2><div class="security-note">⚠️ <strong>IMPORTANT RULES:</strong><br>• Use ONLY letters (A-Z) and numbers (0-9)<br>• NO spaces allowed<br>• Answers will be stored in CAPITAL LETTERS</div><p>Please answer these 3 security questions:</p><div id="questionsContainer"></div><div id="securityError" class="auth-error"></div><div class="auth-buttons"><button id="securitySubmitBtn" class="auth-btn auth-btn-primary">Submit & Continue</button></div></div>`; document.body.appendChild(modal); const container = modal.querySelector('#questionsContainer'); const errorDiv = modal.querySelector('#securityError'); const submitBtn = modal.querySelector('#securitySubmitBtn'); const answers = {}; const answerInputs = []; selectedQuestions.forEach((question, index) => { const div = document.createElement('div'); div.style.marginBottom = '15px'; div.innerHTML = `<label style="color: #8db5e5; font-size: 0.75rem; margin-bottom: 5px; display: block;">${index + 1}. ${question}</label><input type="text" id="answer_${index}" class="auth-input" placeholder="Your answer (A-Z, 0-9 only - NO spaces)" style="margin-bottom: 5px;"><div style="font-size: 0.65rem; margin-top: -10px; margin-bottom: 10px; display: none;" id="error_${index}" class="answer-error"></div>`; container.appendChild(div); const input = div.querySelector(`#answer_${index}`); const inputError = div.querySelector(`#error_${index}`); answers[question] = input; answerInputs.push({ input, error: inputError }); input.addEventListener('input', function() { const value = this.value; const hasSpace = /\s/.test(value); const hasSpecial = /[^A-Za-z0-9]/.test(value); if (hasSpace) { inputError.style.display = 'block'; inputError.innerHTML = '❌ SPACES NOT ALLOWED!'; inputError.style.color = '#ff8888'; this.style.borderColor = '#ff4444'; } else if (hasSpecial) { inputError.style.display = 'block'; inputError.innerHTML = '❌ Use ONLY letters and numbers!'; inputError.style.color = '#ff8888'; this.style.borderColor = '#ff4444'; } else { const cleaned = cleanAnswer(value); if (cleaned.length > 0) { inputError.style.display = 'block'; inputError.style.color = '#10b981'; inputError.innerHTML = `✅ Will be stored as: "${cleaned}"`; this.style.borderColor = '#252b33'; } else if (value.length > 0) { inputError.style.display = 'block'; inputError.innerHTML = '❌ Invalid characters detected!'; inputError.style.color = '#ff8888'; this.style.borderColor = '#ff4444'; } else { inputError.style.display = 'none'; this.style.borderColor = '#252b33'; } } }); }); const handleSubmit = async () => { const securityAnswers = {}; let valid = true; errorDiv.style.display = 'none'; for (let i = 0; i < selectedQuestions.length; i++) { const question = selectedQuestions[i]; const answer = answers[question].value; const inputElement = answers[question]; const inputError = answerInputs[i].error; if (!answer || answer.trim().length === 0) { inputError.style.display = 'block'; inputError.innerHTML = '❌ This field is required!'; inputError.style.color = '#ff8888'; inputElement.style.borderColor = '#ff4444'; valid = false; continue; } if (/\s/.test(answer)) { inputError.style.display = 'block'; inputError.innerHTML = '❌ SPACES ARE NOT ALLOWED! Please remove spaces.'; inputError.style.color = '#ff8888'; inputElement.style.borderColor = '#ff4444'; valid = false; continue; } if (/[^A-Za-z0-9]/.test(answer)) { inputError.style.display = 'block'; inputError.innerHTML = '❌ Only letters (A-Z) and numbers (0-9) allowed!'; inputError.style.color = '#ff8888'; inputElement.style.borderColor = '#ff4444'; valid = false; continue; } const cleaned = cleanAnswer(answer); if (cleaned.length < 2) { inputError.style.display = 'block'; inputError.innerHTML = '❌ Answer must be at least 2 characters!'; inputError.style.color = '#ff8888'; inputElement.style.borderColor = '#ff4444'; valid = false; continue; } securityAnswers[question] = cleaned; } if (valid) { errorDiv.style.display = 'none'; modal.remove(); resolve(securityAnswers); } else { errorDiv.style.display = 'block'; errorDiv.innerHTML = '❌ Please fix the errors above before continuing.'; errorDiv.style.color = '#ff8888'; const firstError = document.querySelector('.answer-error[style*="display: block"]'); if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' }); } }; submitBtn.addEventListener('click', handleSubmit); answerInputs.forEach(({ input }) => { input.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); }); }); }); }
-    async function showForgotPasswordModal() { return new Promise((resolve) => { let step = 1; let username = ''; let userQuestions = {}; const modal = document.createElement('div'); modal.className = 'modal'; modal.innerHTML = `<div class="modal-content" id="forgotModalContent"><h2 id="forgotTitle">🔐 Reset Password</h2><div id="forgotBody"></div><div id="forgotError" class="auth-error"></div><div class="auth-buttons"><button id="forgotBackBtn" class="auth-btn auth-btn-secondary">Back</button><button id="forgotNextBtn" class="auth-btn auth-btn-primary">Next</button></div></div>`; document.body.appendChild(modal); const titleEl = modal.querySelector('#forgotTitle'); const bodyEl = modal.querySelector('#forgotBody'); const errorDiv = modal.querySelector('#forgotError'); const backBtn = modal.querySelector('#forgotBackBtn'); const nextBtn = modal.querySelector('#forgotNextBtn'); async function loadStep() { errorDiv.style.display = 'none'; if (step === 1) { titleEl.innerHTML = '🔐 Enter Username'; bodyEl.innerHTML = `<p>Enter your username to reset password</p><input type="text" id="resetUsername" class="auth-input" placeholder="Username" autocomplete="off">`; setTimeout(() => document.getElementById('resetUsername')?.focus(), 100); } else if (step === 2) { const usernameInput = document.getElementById('resetUsername'); username = usernameInput?.value.trim(); if (!username || username.length < 3) { errorDiv.style.display = 'block'; errorDiv.innerHTML = '❌ Please enter a valid username'; step = 1; loadStep(); return; } const userRef = ref(database, `users/${username}`); const snapshot = await get(userRef); if (!snapshot.exists()) { errorDiv.style.display = 'block'; errorDiv.innerHTML = '❌ Username not found!'; step = 1; loadStep(); return; } const userData = snapshot.val(); if (!userData.securityQuestions) { errorDiv.style.display = 'block'; errorDiv.innerHTML = '❌ No security questions found for this account'; step = 1; loadStep(); return; } userQuestions = userData.securityQuestions; const questions = Object.keys(userQuestions); let html = `<p>Answer these security questions to verify your identity:</p><div class="security-note" style="margin-bottom: 15px;">⚠️ Use ONLY letters and numbers. NO spaces. Answers are case-sensitive (use CAPITALS).</div>`; questions.forEach((question, index) => { html += `<div style="margin-bottom: 15px;"><label style="color: #8db5e5; font-size: 0.75rem; margin-bottom: 5px; display: block;">${index + 1}. ${question}</label><input type="text" id="secAnswer_${index}" class="auth-input" placeholder="Your answer (A-Z, 0-9 only)" style="margin-bottom: 5px;"><div style="font-size: 0.6rem; color: #ff8888;" id="secError_${index}" class="answer-error"></div></div>`; }); bodyEl.innerHTML = html; questions.forEach((_, index) => { const input = document.getElementById(`secAnswer_${index}`); const errorEl = document.getElementById(`secError_${index}`); if (input) { input.addEventListener('input', function() { const value = this.value; const hasSpace = /\s/.test(value); const hasSpecial = /[^A-Za-z0-9]/.test(value); if (hasSpace) { errorEl.style.display = 'block'; errorEl.innerHTML = '❌ SPACES NOT ALLOWED!'; this.style.borderColor = '#ff4444'; } else if (hasSpecial) { errorEl.style.display = 'block'; errorEl.innerHTML = '❌ Use ONLY letters and numbers!'; this.style.borderColor = '#ff4444'; } else { errorEl.style.display = 'none'; this.style.borderColor = '#252b33'; } }); } }); setTimeout(() => document.getElementById('secAnswer_0')?.focus(), 100); } else if (step === 3) { const questions = Object.keys(userQuestions); let allCorrect = true; for (let i = 0; i < questions.length; i++) { const question = questions[i]; const inputAnswer = document.getElementById(`secAnswer_${i}`)?.value; const errorEl = document.getElementById(`secError_${i}`); if (!inputAnswer || inputAnswer.trim().length === 0) { if (errorEl) { errorEl.style.display = 'block'; errorEl.innerHTML = '❌ This field is required!'; errorEl.style.color = '#ff8888'; } allCorrect = false; continue; } if (/\s/.test(inputAnswer)) { if (errorEl) { errorEl.style.display = 'block'; errorEl.innerHTML = '❌ SPACES NOT ALLOWED!'; errorEl.style.color = '#ff8888'; } allCorrect = false; continue; } if (/[^A-Za-z0-9]/.test(inputAnswer)) { if (errorEl) { errorEl.style.display = 'block'; errorEl.innerHTML = '❌ Use ONLY letters and numbers!'; errorEl.style.color = '#ff8888'; } allCorrect = false; continue; } const cleanedAnswer = cleanAnswer(inputAnswer); if (cleanedAnswer !== userQuestions[question]) { if (errorEl) { errorEl.style.display = 'block'; errorEl.innerHTML = '❌ Incorrect answer!'; errorEl.style.color = '#ff8888'; } allCorrect = false; } else if (errorEl) { errorEl.style.display = 'none'; } } if (!allCorrect) { errorDiv.style.display = 'block'; errorDiv.innerHTML = '❌ One or more answers are incorrect. Please try again.'; errorDiv.style.color = '#ff8888'; step = 2; loadStep(); return; } titleEl.innerHTML = '🔐 Set New Password'; bodyEl.innerHTML = `<p>Enter your new password</p><input type="password" id="newPassword" class="auth-input" placeholder="New Password (min 3 characters)" autocomplete="off"><input type="password" id="confirmPassword" class="auth-input" placeholder="Confirm New Password" autocomplete="off">`; setTimeout(() => document.getElementById('newPassword')?.focus(), 100); } } backBtn.addEventListener('click', () => { if (step > 1) { step--; loadStep(); } else { modal.remove(); resolve(false); } }); nextBtn.addEventListener('click', async () => { if (step === 1) { step++; loadStep(); } else if (step === 2) { step++; loadStep(); } else if (step === 3) { const newPassword = document.getElementById('newPassword')?.value; const confirmPassword = document.getElementById('confirmPassword')?.value; if (!newPassword || newPassword.length < 3) { errorDiv.style.display = 'block'; errorDiv.innerHTML = '❌ Password must be at least 3 characters'; return; } if (newPassword !== confirmPassword) { errorDiv.style.display = 'block'; errorDiv.innerHTML = '❌ Passwords do not match'; return; } errorDiv.style.display = 'block'; errorDiv.innerHTML = '⏳ Resetting password...'; errorDiv.style.color = '#fbbf24'; const hashedPassword = simpleHash(newPassword); const userRef = ref(database, `users/${username}`); await update(userRef, { password: hashedPassword, passwordResetAt: serverTimestamp(), passwordResetAtMs: Date.now() }); errorDiv.style.display = 'block'; errorDiv.innerHTML = '✅ Password reset successful! You can now login.'; errorDiv.style.color = '#10b981'; setTimeout(() => { modal.remove(); resolve(true); }, 2000); } }); loadStep(); }); }
-    async function registerUser(username, password, securityAnswers) { if (!database) return { success: false, message: "Database not ready" }; try { const userRef = ref(database, `users/${username}`); const snapshot = await get(userRef); if (snapshot.exists()) return { success: false, message: "Username already exists!" }; const hashedPassword = simpleHash(password); await set(userRef, { username, password: hashedPassword, securityQuestions: securityAnswers, createdAt: serverTimestamp(), createdAtMs: Date.now() }); return { success: true, message: "Account created!" }; } catch (error) { return { success: false, message: "Error creating account" }; } }
-    async function loginUser(username, password) { if (!database) return { success: false, message: "Database not ready" }; try { const userRef = ref(database, `users/${username}`); const snapshot = await get(userRef); if (!snapshot.exists()) return { success: false, message: "Username not found!" }; const userData = snapshot.val(); const hashedPassword = simpleHash(password); if (userData.password === hashedPassword) return { success: true, message: "Login successful!" }; return { success: false, message: "Wrong password!" }; } catch (error) { return { success: false, message: "Error logging in" }; } }
-    async function initAuth() { const savedUsername = localStorage.getItem("hensworld_username"); if (savedUsername) { try { const userRef = ref(database, `users/${savedUsername}`); const snapshot = await get(userRef); if (snapshot.exists()) { currentUsername = savedUsername; await setActiveSession(savedUsername); document.getElementById("usernameDisplay").innerText = currentUsername; return savedUsername; } } catch (e) {} } const username = await (async () => { return new Promise((resolve) => { let isLoginMode = true; const modal = document.createElement('div'); modal.className = 'modal'; modal.innerHTML = `<div class="modal-content"><h2 id="authTitle">🐔 Login to Hen's World</h2><p id="authDesc">Enter your username and password</p><input type="text" id="authUsername" class="auth-input" placeholder="Username" autocomplete="off"><input type="password" id="authPassword" class="auth-input" placeholder="Password" autocomplete="off"><div id="authError" class="auth-error"></div><div class="auth-buttons"><button id="authSubmitBtn" class="auth-btn auth-btn-primary">Login</button></div><div class="auth-switch" id="authSwitch">Don't have an account? <span>Register</span></div><div class="forgot-password" id="forgotPassword">🔑 Forgot password? <span>Reset here</span></div></div>`; document.body.appendChild(modal); const usernameInput = modal.querySelector('#authUsername'); const passwordInput = modal.querySelector('#authPassword'); const errorDiv = modal.querySelector('#authError'); const submitBtn = modal.querySelector('#authSubmitBtn'); const authTitle = modal.querySelector('#authTitle'); const authDesc = modal.querySelector('#authDesc'); const authSwitch = modal.querySelector('#authSwitch'); const forgotPassword = modal.querySelector('#forgotPassword'); setTimeout(() => usernameInput.focus(), 100); forgotPassword.addEventListener('click', async () => { modal.remove(); await showForgotPasswordModal(); (async () => { const newUser = await new Promise((res) => { const m2 = document.createElement('div'); m2.className = 'modal'; m2.innerHTML = `<div class="modal-content"><h2>Login Again</h2><button id="retryLogin">Login</button></div>`; document.body.appendChild(m2); m2.querySelector('#retryLogin').onclick = () => { m2.remove(); res(null); }; }); })(); resolve(await initAuth()); }); const updateMode = () => { if (isLoginMode) { authTitle.innerHTML = '🐔 Login to Hen\'s World'; authDesc.innerHTML = 'Enter your username and password'; submitBtn.innerHTML = 'Login'; authSwitch.innerHTML = 'Don\'t have an account? <span>Register</span>'; forgotPassword.style.display = 'block'; } else { authTitle.innerHTML = '📝 Create Account'; authDesc.innerHTML = 'Choose a username and password'; submitBtn.innerHTML = 'Register'; authSwitch.innerHTML = 'Already have an account? <span>Login</span>'; forgotPassword.style.display = 'none'; } errorDiv.style.display = 'none'; usernameInput.value = ''; passwordInput.value = ''; }; authSwitch.addEventListener('click', () => { isLoginMode = !isLoginMode; updateMode(); }); const handleSubmit = async () => { const username = usernameInput.value.trim(); const password = passwordInput.value; if (username.length < 3) { errorDiv.style.display = 'block'; errorDiv.innerHTML = '❌ Username must be at least 3 characters'; return; } if (password.length < 3) { errorDiv.style.display = 'block'; errorDiv.innerHTML = '❌ Password must be at least 3 characters'; return; } errorDiv.style.display = 'block'; errorDiv.innerHTML = '⏳ Processing...'; errorDiv.style.color = '#fbbf24'; if (isLoginMode) { const result = await loginUser(username, password); if (result.success) { await setActiveSession(username); modal.remove(); resolve(username); } else { errorDiv.style.display = 'block'; errorDiv.innerHTML = `❌ ${result.message}`; errorDiv.style.color = '#ff8888'; } } else { const securityAnswers = await showSecurityQuestionsModal(username); const result = await registerUser(username, password, securityAnswers); if (result.success) { await setActiveSession(username); modal.remove(); resolve(username); } else { errorDiv.style.display = 'block'; errorDiv.innerHTML = `❌ ${result.message}`; errorDiv.style.color = '#ff8888'; } } }; submitBtn.addEventListener('click', handleSubmit); usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); }); passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); }); }); })(); if (username) { currentUsername = username; localStorage.setItem("hensworld_username", username); document.getElementById("usernameDisplay").innerText = currentUsername; return username; } return null; }
+    async function loginUser(username, password) {
+        if (!database) return { success: false, message: "Database not ready" };
+        try {
+            const userRef = ref(database, `users/${username}`);
+            const snapshot = await get(userRef);
+            if (!snapshot.exists()) return { success: false, message: "Username not found!" };
+            const userData = snapshot.val();
+            const hashedPassword = simpleHash(password);
+            if (userData.password === hashedPassword) return { success: true, message: "Login successful!" };
+            return { success: false, message: "Wrong password!" };
+        } catch (error) {
+            return { success: false, message: "Error logging in" };
+        }
+    }
     
-    // ========== CORE CHAT FIXES ==========
+    async function setActiveSession(username) {
+        if (!database) return;
+        const sessionRef = ref(database, `active_sessions/${username}`);
+        await set(sessionRef, {
+            username: username,
+            loginTimeMs: Date.now(),
+            sessionId: Date.now() + '_' + Math.random().toString(36).substr(2, 6)
+        });
+    }
+    
+    async function removeActiveSession(username) {
+        if (!database || !username) return;
+        const sessionRef = ref(database, `active_sessions/${username}`);
+        await set(sessionRef, null);
+    }
+    
+    async function showAuthModalAndLogin() {
+        return new Promise((resolve) => {
+            let isLoginMode = true;
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h2 id="authTitle">🐔 Login to Hen's World</h2>
+                    <p id="authDesc">Enter your username and password</p>
+                    <input type="text" id="authUsername" class="auth-input" placeholder="Username" autocomplete="off">
+                    <input type="password" id="authPassword" class="auth-input" placeholder="Password" autocomplete="off">
+                    <div id="authError" class="auth-error"></div>
+                    <div class="auth-buttons">
+                        <button id="authSubmitBtn" class="auth-btn auth-btn-primary">Login</button>
+                    </div>
+                    <div class="auth-switch" id="authSwitch">Don't have an account? <span>Register</span></div>
+                    <div class="forgot-password" id="forgotPassword">🔑 Forgot password? <span>Reset here</span></div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            const usernameInput = modal.querySelector('#authUsername');
+            const passwordInput = modal.querySelector('#authPassword');
+            const errorDiv = modal.querySelector('#authError');
+            const submitBtn = modal.querySelector('#authSubmitBtn');
+            const authTitle = modal.querySelector('#authTitle');
+            const authDesc = modal.querySelector('#authDesc');
+            const authSwitch = modal.querySelector('#authSwitch');
+            const forgotPassword = modal.querySelector('#forgotPassword');
+            
+            setTimeout(() => usernameInput.focus(), 100);
+            
+            forgotPassword.addEventListener('click', async () => {
+                modal.remove();
+                await showForgotPasswordModal();
+                // after reset, re-show auth modal
+                const newUsername = await showAuthModalAndLogin();
+                resolve(newUsername);
+            });
+            
+            const updateMode = () => {
+                if (isLoginMode) {
+                    authTitle.innerHTML = '🐔 Login to Hen\'s World';
+                    authDesc.innerHTML = 'Enter your username and password';
+                    submitBtn.innerHTML = 'Login';
+                    authSwitch.innerHTML = 'Don\'t have an account? <span>Register</span>';
+                    forgotPassword.style.display = 'block';
+                } else {
+                    authTitle.innerHTML = '📝 Create Account';
+                    authDesc.innerHTML = 'Choose a username and password';
+                    submitBtn.innerHTML = 'Register';
+                    authSwitch.innerHTML = 'Already have an account? <span>Login</span>';
+                    forgotPassword.style.display = 'none';
+                }
+                errorDiv.style.display = 'none';
+                usernameInput.value = '';
+                passwordInput.value = '';
+            };
+            
+            authSwitch.addEventListener('click', () => {
+                isLoginMode = !isLoginMode;
+                updateMode();
+            });
+            
+            const handleSubmit = async () => {
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value;
+                
+                if (username.length < 3) {
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerHTML = '❌ Username must be at least 3 characters';
+                    return;
+                }
+                if (password.length < 3) {
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerHTML = '❌ Password must be at least 3 characters';
+                    return;
+                }
+                
+                errorDiv.style.display = 'block';
+                errorDiv.innerHTML = '⏳ Processing...';
+                errorDiv.style.color = '#fbbf24';
+                
+                if (isLoginMode) {
+                    const result = await loginUser(username, password);
+                    if (result.success) {
+                        await setActiveSession(username);
+                        modal.remove();
+                        resolve(username);
+                    } else {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = `❌ ${result.message}`;
+                        errorDiv.style.color = '#ff8888';
+                    }
+                } else {
+                    const securityAnswers = await showSecurityQuestionsModal(username);
+                    const result = await registerUser(username, password, securityAnswers);
+                    if (result.success) {
+                        await setActiveSession(username);
+                        modal.remove();
+                        resolve(username);
+                    } else {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = `❌ ${result.message}`;
+                        errorDiv.style.color = '#ff8888';
+                    }
+                }
+            };
+            
+            submitBtn.addEventListener('click', handleSubmit);
+            usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
+            passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
+        });
+    }
+    
+    async function initAuth() {
+        const savedUsername = localStorage.getItem("hensworld_username");
+        if (savedUsername) {
+            try {
+                const userRef = ref(database, `users/${savedUsername}`);
+                const snapshot = await get(userRef);
+                if (snapshot.exists()) {
+                    currentUsername = savedUsername;
+                    await setActiveSession(savedUsername);
+                    document.getElementById("usernameDisplay").innerText = currentUsername;
+                    return true;
+                }
+            } catch (e) {}
+        }
+        const username = await showAuthModalAndLogin();
+        if (username) {
+            currentUsername = username;
+            localStorage.setItem("hensworld_username", username);
+            document.getElementById("usernameDisplay").innerText = currentUsername;
+            return true;
+        }
+        return false;
+    }
+    
+    // ---------- CHAT FUNCTIONS ----------
     async function updateOnlineStatus() {
         if (!currentRoom || !currentUsername || !database) return;
         const userOnlineRef = ref(database, `rooms/${currentRoom}/online/${currentUsername}`);
-        await set(userOnlineRef, { username: currentUsername, lastSeen: serverTimestamp(), lastSeenMs: Date.now() });
+        await set(userOnlineRef, {
+            username: currentUsername,
+            lastSeen: serverTimestamp(),
+            lastSeenMs: Date.now()
+        });
         onDisconnect(userOnlineRef).remove();
     }
     
-    async function markDelivered(msgId) { if (!currentRoom || !currentUsername) return; await set(ref(database, `rooms/${currentRoom}/messages/${msgId}/delivered/${currentUsername}`), serverTimestamp()); }
-    async function markSeen(msgId, sender) { if (!currentRoom || !currentUsername || sender === currentUsername) return; await set(ref(database, `rooms/${currentRoom}/messages/${msgId}/seen/${currentUsername}`), serverTimestamp()); }
+    async function markDelivered(msgId) {
+        if (!currentRoom || !currentUsername) return;
+        await set(ref(database, `rooms/${currentRoom}/messages/${msgId}/delivered/${currentUsername}`), serverTimestamp());
+    }
+    
+    async function markSeen(msgId, sender) {
+        if (!currentRoom || !currentUsername || sender === currentUsername) return;
+        await set(ref(database, `rooms/${currentRoom}/messages/${msgId}/seen/${currentUsername}`), serverTimestamp());
+    }
     
     function getMessageStatus(message) {
         const sender = message.sender;
@@ -824,66 +1391,212 @@
     }
     
     window.showInfoPopup = function(message) {
-        const popup = document.createElement('div'); popup.className = 'info-popup';
+        const popup = document.createElement('div');
+        popup.className = 'info-popup';
         let html = `<h3>📋 Message Info</h3><p style="color:#aaa;font-size:0.7rem">Message: ${escapeHtml(message.text)}</p><p style="color:#aaa;font-size:0.7rem">Sent by: ${escapeHtml(message.sender)}</p>`;
-        if (message.seen) { const others = Object.keys(message.seen).filter(u => u !== message.sender); if (others.length) { html += '<h4 style="margin-top:10px;color:#ff99cc">👁️ Seen by:</h4><div class="seen-list">'; others.forEach(u => { const ts = new Date(message.seen[u]).toLocaleString(); html += `<div class="seen-item">🐔 ${escapeHtml(u)} - ${ts}</div>`; }); html += '</div>'; } else html += '<p style="color:#888">Only the sender has seen this message</p>'; } else html += '<p style="color:#888">No one has seen this message yet</p>';
-        popup.innerHTML = html + `<button class="close-popup">Close</button>`; document.body.appendChild(popup); popup.querySelector('.close-popup').onclick = () => popup.remove(); popup.onclick = (e) => { if (e.target === popup) popup.remove(); };
+        if (message.seen) {
+            const others = Object.keys(message.seen).filter(u => u !== message.sender);
+            if (others.length) {
+                html += '<h4 style="margin-top:10px;color:#ff99cc">👁️ Seen by:</h4><div class="seen-list">';
+                others.forEach(u => { const ts = new Date(message.seen[u]).toLocaleString(); html += `<div class="seen-item">🐔 ${escapeHtml(u)} - ${ts}</div>`; });
+                html += '</div>';
+            } else html += '<p style="color:#888">Only the sender has seen this message</p>';
+        } else html += '<p style="color:#888">No one has seen this message yet</p>';
+        popup.innerHTML = html + `<button class="close-popup">Close</button>`;
+        document.body.appendChild(popup);
+        popup.querySelector('.close-popup').onclick = () => popup.remove();
+        popup.onclick = (e) => { if (e.target === popup) popup.remove(); };
     };
     
-    async function saveAutoDeleteMode(mode) { if (!currentRoom) return; await set(ref(database, `rooms/${currentRoom}/settings/autoDelete`), mode); }
-    async function loadAutoDeleteMode() { if (!currentRoom) return; const snap = await get(ref(database, `rooms/${currentRoom}/settings/autoDelete`)); if (snap.exists()) { autoDeleteMode = snap.val(); document.getElementById('autoDeleteSelect').value = autoDeleteMode; if (autoDeleteMode !== 'off') startAutoDeleteTimer(); } }
-    function startAutoDeleteTimer() { if (autoDeleteInterval) clearInterval(autoDeleteInterval); if (autoDeleteMode === 'off') return; let ms = autoDeleteMode === '1hour' ? 3600000 : autoDeleteMode === '24hour' ? 86400000 : 0; if (ms === 0) { set(ref(database, `rooms/${currentRoom}/messages`), null); addSystemMessage(`⚡ All messages cleared!`); return; } autoDeleteInterval = setInterval(async () => { const cutoff = Date.now() - ms; const msgsRef = ref(database, `rooms/${currentRoom}/messages`); const snap = await get(msgsRef); if (snap.exists()) { let count = 0; for (const [id, msg] of Object.entries(snap.val())) { if (msg.timestampMs && msg.timestampMs < cutoff) { await remove(ref(database, `rooms/${currentRoom}/messages/${id}`)); count++; } } if (count) addSystemMessage(`🧹 Auto-delete: ${count} old messages removed`); } }, 30000); }
-    function stopAutoDeleteTimer() { if (autoDeleteInterval) { clearInterval(autoDeleteInterval); autoDeleteInterval = null; } }
-    async function changeAutoDeleteMode() { const select = document.getElementById('autoDeleteSelect'); autoDeleteMode = select.value; await saveAutoDeleteMode(autoDeleteMode); stopAutoDeleteTimer(); if (autoDeleteMode === 'immediate') { await set(ref(database, `rooms/${currentRoom}/messages`), null); addSystemMessage(`⚡ All messages cleared!`); } else if (autoDeleteMode !== 'off') { startAutoDeleteTimer(); const hours = autoDeleteMode === '1hour' ? '1 hour' : '24 hours'; addSystemMessage(`🕐 Auto-delete enabled: messages older than ${hours} will be cleared.`); } else { addSystemMessage(`🕐 Auto-delete disabled.`); } }
+    async function saveAutoDeleteMode(mode) {
+        if (!currentRoom) return;
+        await set(ref(database, `rooms/${currentRoom}/settings/autoDelete`), mode);
+    }
     
-    async function addSystemMessage(text) { if (!currentRoom || !database) return; await push(ref(database, `rooms/${currentRoom}/messages`), { sender: "🐔 Hen's World", text, timestamp: serverTimestamp(), timestampMs: Date.now(), isSystem: true }); }
+    async function loadAutoDeleteMode() {
+        if (!currentRoom) return;
+        const snap = await get(ref(database, `rooms/${currentRoom}/settings/autoDelete`));
+        if (snap.exists()) {
+            autoDeleteMode = snap.val();
+            document.getElementById('autoDeleteSelect').value = autoDeleteMode;
+            if (autoDeleteMode !== 'off') startAutoDeleteTimer();
+        }
+    }
+    
+    function startAutoDeleteTimer() {
+        if (autoDeleteInterval) clearInterval(autoDeleteInterval);
+        if (autoDeleteMode === 'off') return;
+        let ms = autoDeleteMode === '1hour' ? 3600000 : autoDeleteMode === '24hour' ? 86400000 : 0;
+        if (ms === 0) {
+            set(ref(database, `rooms/${currentRoom}/messages`), null);
+            addSystemMessage(`⚡ All messages cleared!`);
+            return;
+        }
+        autoDeleteInterval = setInterval(async () => {
+            const cutoff = Date.now() - ms;
+            const msgsRef = ref(database, `rooms/${currentRoom}/messages`);
+            const snap = await get(msgsRef);
+            if (snap.exists()) {
+                let count = 0;
+                for (const [id, msg] of Object.entries(snap.val())) {
+                    if (msg.timestampMs && msg.timestampMs < cutoff) {
+                        await remove(ref(database, `rooms/${currentRoom}/messages/${id}`));
+                        count++;
+                    }
+                }
+                if (count) addSystemMessage(`🧹 Auto-delete: ${count} old messages removed`);
+            }
+        }, 30000);
+    }
+    
+    function stopAutoDeleteTimer() {
+        if (autoDeleteInterval) { clearInterval(autoDeleteInterval); autoDeleteInterval = null; }
+    }
+    
+    async function changeAutoDeleteMode() {
+        const select = document.getElementById('autoDeleteSelect');
+        autoDeleteMode = select.value;
+        await saveAutoDeleteMode(autoDeleteMode);
+        stopAutoDeleteTimer();
+        if (autoDeleteMode === 'immediate') {
+            await set(ref(database, `rooms/${currentRoom}/messages`), null);
+            addSystemMessage(`⚡ All messages cleared!`);
+        } else if (autoDeleteMode !== 'off') {
+            startAutoDeleteTimer();
+            const hours = autoDeleteMode === '1hour' ? '1 hour' : '24 hours';
+            addSystemMessage(`🕐 Auto-delete enabled: messages older than ${hours} will be cleared.`);
+        } else {
+            addSystemMessage(`🕐 Auto-delete disabled.`);
+        }
+    }
+    
+    async function addSystemMessage(text) {
+        if (!currentRoom || !database) return;
+        await push(ref(database, `rooms/${currentRoom}/messages`), {
+            sender: "🐔 Hen's World",
+            text: text,
+            timestamp: serverTimestamp(),
+            timestampMs: Date.now(),
+            isSystem: true
+        });
+    }
     
     function displayMessage(message, msgId) {
         const container = document.getElementById("messagesContainer");
         if (!container) return;
         if (container.children.length === 1 && container.children[0].classList?.contains('loading')) container.innerHTML = '';
+        
         const isOwn = (message.sender === currentUsername);
         const isSystem = message.isSystem === true;
-        const msgDiv = document.createElement("div"); msgDiv.id = `msg-${msgId}`; msgDiv.className = "message"; if (!isSystem) msgDiv.classList.add(isOwn ? 'own-message' : ''); if (isSystem) msgDiv.classList.add("system-message");
-        let timeStr = "now"; if (message.timestampMs) { const date = new Date(message.timestampMs); timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
-        const status = getMessageStatus(message); const statusIcon = (!isSystem && isOwn) ? `<span class="message-status" style="color:${status.color}" title="${status.text}"> ${status.icon}</span>` : '';
-        if (isSystem) { msgDiv.innerHTML = `<div class="message-content"><div class="message-bubble">🐔 ${escapeHtml(message.text)}</div></div>`; } else { msgDiv.innerHTML = `<div class="message-header"><span class="message-sender">${escapeHtml(message.sender)}</span><span class="message-time">${timeStr}</span>${statusIcon}</div><div class="message-content"><div class="message-bubble">${escapeHtml(message.text)}</div></div><div class="message-actions"><button class="action-btn info-btn">ℹ️ Info</button></div>`; msgDiv.querySelector('.info-btn').addEventListener('click', () => window.showInfoPopup(message)); }
-        container.appendChild(msgDiv); container.scrollTop = container.scrollHeight;
+        const msgDiv = document.createElement("div");
+        msgDiv.id = `msg-${msgId}`;
+        msgDiv.className = "message";
+        if (!isSystem) msgDiv.classList.add(isOwn ? 'own-message' : '');
+        if (isSystem) msgDiv.classList.add("system-message");
+        
+        let timeStr = "now";
+        if (message.timestampMs) {
+            const date = new Date(message.timestampMs);
+            timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        const status = getMessageStatus(message);
+        const statusIcon = (!isSystem && isOwn) ? `<span class="message-status" style="color:${status.color}" title="${status.text}"> ${status.icon}</span>` : '';
+        
+        if (isSystem) {
+            msgDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="message-bubble">🐔 ${escapeHtml(message.text)}</div>
+                </div>
+            `;
+        } else {
+            msgDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="message-sender">${escapeHtml(message.sender)}</span>
+                    <span class="message-time">${timeStr}</span>
+                    ${statusIcon}
+                </div>
+                <div class="message-content">
+                    <div class="message-bubble">${escapeHtml(message.text)}</div>
+                </div>
+                <div class="message-actions">
+                    <button class="action-btn info-btn">ℹ️ Info</button>
+                </div>
+            `;
+            const infoBtn = msgDiv.querySelector('.info-btn');
+            infoBtn.addEventListener('click', () => window.showInfoPopup(message));
+        }
+        container.appendChild(msgDiv);
+        container.scrollTop = container.scrollHeight;
     }
     
     async function sendMessage(text) {
-        if (!text.trim()) return; if (!currentRoom) { alert("Join a room first!"); return; }
-        const msgData = { sender: currentUsername, text: text.trim(), timestamp: serverTimestamp(), timestampMs: Date.now(), delivered: {}, seen: {} };
-        try { const newMsgRef = await push(ref(database, `rooms/${currentRoom}/messages`), msgData); await markDelivered(newMsgRef.key); document.getElementById("messageInput").value = ""; } catch (error) { alert("Failed to send message"); }
+        if (!text.trim()) return;
+        if (!currentRoom) { alert("Join a room first!"); return; }
+        const msgData = {
+            sender: currentUsername,
+            text: text.trim(),
+            timestamp: serverTimestamp(),
+            timestampMs: Date.now(),
+            delivered: {},
+            seen: {}
+        };
+        try {
+            const newMsgRef = await push(ref(database, `rooms/${currentRoom}/messages`), msgData);
+            await markDelivered(newMsgRef.key);
+            document.getElementById("messageInput").value = "";
+        } catch (error) {
+            alert("Failed to send message");
+        }
     }
     
     function joinRoom(roomId) {
-        if (!database || !isFirebaseReady) return false;
+        if (!database || !isFirebaseReady || !currentUsername) return false;
         const cleanRoomId = roomId.trim().replace(/[.#$[\]]/g, '_');
         if (!cleanRoomId) return false;
         if (currentRoom === cleanRoomId) return true;
         
-        // cleanup previous room listeners and online status
-        if (currentRoom && currentUsername) { set(ref(database, `rooms/${currentRoom}/online/${currentUsername}`), null); }
-        if (messagesListener) { messagesListener(); messagesListener = null; }
-        if (statusListener) { statusListener(); statusListener = null; }
+        // Clean previous room
+        if (currentRoom && currentUsername) {
+            set(ref(database, `rooms/${currentRoom}/online/${currentUsername}`), null);
+        }
+        if (messagesListener) messagesListener();
+        if (statusListener) statusListener();
         
         currentRoom = cleanRoomId;
         document.getElementById("currentRoomName").innerText = currentRoom;
         document.getElementById("messageInput").disabled = false;
         document.getElementById("sendBtn").disabled = false;
+        
         const container = document.getElementById("messagesContainer");
         container.innerHTML = '<div class="loading">🐔 loading messages...</div>';
         
         const msgsRef = ref(database, `rooms/${currentRoom}/messages`);
         messagesListener = onChildAdded(query(msgsRef, limitToLast(100)), async (snapshot) => {
             const message = snapshot.val();
-            if (message) { displayMessage(message, snapshot.key); if (message.sender !== currentUsername && !message.isSystem) await markSeen(snapshot.key, message.sender); }
+            if (message) {
+                displayMessage(message, snapshot.key);
+                if (message.sender !== currentUsername && !message.isSystem) {
+                    await markSeen(snapshot.key, message.sender);
+                }
+            }
         });
         statusListener = onValue(msgsRef, (snap) => {
             const msgs = snap.val();
-            if (msgs) { for (const [id, msg] of Object.entries(msgs)) { const el = document.getElementById(`msg-${id}`); if (el && !msg.isSystem) { const statusSpan = el.querySelector('.message-status'); if (statusSpan) { const status = getMessageStatus(msg); statusSpan.innerHTML = `<span style="color:${status.color}" title="${status.text}"> ${status.icon}</span>`; } } } }
+            if (msgs) {
+                for (const [id, msg] of Object.entries(msgs)) {
+                    const el = document.getElementById(`msg-${id}`);
+                    if (el && !msg.isSystem) {
+                        const statusSpan = el.querySelector('.message-status');
+                        if (statusSpan) {
+                            const status = getMessageStatus(msg);
+                            statusSpan.innerHTML = `<span style="color:${status.color}" title="${status.text}"> ${status.icon}</span>`;
+                        }
+                    }
+                }
+            }
         });
+        
         updateOnlineStatus();
         loadAutoDeleteMode();
         setTimeout(() => addSystemMessage(`${currentUsername} 🐔 joined the room`), 300);
@@ -893,11 +1606,14 @@
     async function logout() {
         if (currentUsername) {
             await removeActiveSession(currentUsername);
-            if (currentRoom && database) { await set(ref(database, `rooms/${currentRoom}/online/${currentUsername}`), null); }
-            if (messagesListener) { messagesListener(); messagesListener = null; }
-            if (statusListener) { statusListener(); statusListener = null; }
+            if (currentRoom && database) {
+                await set(ref(database, `rooms/${currentRoom}/online/${currentUsername}`), null);
+            }
+            if (messagesListener) messagesListener();
+            if (statusListener) statusListener();
             localStorage.removeItem("hensworld_username");
-            currentUsername = null; currentRoom = null;
+            currentUsername = null;
+            currentRoom = null;
             location.reload();
         }
     }
@@ -909,26 +1625,64 @@
         const messageInput = document.getElementById("messageInput");
         const logoutBtn = document.getElementById("logoutBtn");
         const autoDeleteSelect = document.getElementById("autoDeleteSelect");
-        joinBtn.addEventListener("click", () => { let roomVal = roomInput.value.trim(); if (!roomVal) roomVal = "henhouse-lounge"; joinRoom(roomVal); });
+        
+        joinBtn.addEventListener("click", () => {
+            let roomVal = roomInput.value.trim();
+            if (!roomVal) roomVal = "henhouse-lounge";
+            joinRoom(roomVal);
+        });
+        
         sendBtn.addEventListener("click", () => sendMessage(messageInput.value));
-        messageInput.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(messageInput.value); } });
+        messageInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage(messageInput.value);
+            }
+        });
+        
         logoutBtn.addEventListener("click", logout);
         autoDeleteSelect.addEventListener("change", changeAutoDeleteMode);
+        
+        // Default room
         roomInput.value = "henhouse-lounge";
-        setTimeout(() => { if (isFirebaseReady && !currentRoom && currentUsername) joinRoom("henhouse-lounge"); }, 800);
+        // Join after auth is done (called from init)
     }
     
-    function addWatermark() { const watermark = document.createElement('div'); watermark.style.cssText = `position:fixed; bottom:5px; left:5px; right:5px; font-size:9px; color:rgba(150,150,150,0.25); z-index:9998; pointer-events:none; text-align:center;`; watermark.innerHTML = `${currentUsername} • ${new Date().toLocaleString()} • hensworld.chat`; document.body.appendChild(watermark); }
+    function addWatermark() {
+        const watermark = document.createElement('div');
+        watermark.style.cssText = `position:fixed; bottom:5px; left:5px; right:5px; font-size:9px; color:rgba(150,150,150,0.25); z-index:9998; pointer-events:none; text-align:center;`;
+        watermark.innerHTML = `${currentUsername} • ${new Date().toLocaleString()} • hensworld.chat`;
+        document.body.appendChild(watermark);
+    }
+    
     document.addEventListener('contextmenu', (e) => e.preventDefault());
     window.addEventListener('blur', () => document.querySelector('.app')?.classList.add('screenshot-detected'));
     window.addEventListener('focus', () => setTimeout(() => document.querySelector('.app')?.classList.remove('screenshot-detected'), 300));
     
     async function init() {
-        await initFirebase();
-        if (isFirebaseReady) { await initAuth(); setupUI(); addWatermark(); }
+        try {
+            const firebaseApp = initializeApp(firebaseConfig);
+            database = getDatabase(firebaseApp);
+            isFirebaseReady = true;
+            document.getElementById("connectionStatus").innerHTML = "✅ Secure connection ready";
+            
+            const authSuccess = await initAuth();
+            if (authSuccess && currentUsername) {
+                setupUI();
+                addWatermark();
+                // Join default room after everything is set
+                joinRoom("henhouse-lounge");
+            } else {
+                // fallback: reload to try again
+                console.error("Auth failed");
+                location.reload();
+            }
+        } catch (error) {
+            console.error("Init error:", error);
+            document.getElementById("connectionStatus").innerHTML = "❌ Connection failed";
+        }
     }
     
-    async function initFirebase() { try { app = initializeApp(firebaseConfig); database = getDatabase(app); isFirebaseReady = true; document.getElementById("connectionStatus").innerHTML = "✅ Secure connection ready"; return true; } catch (error) { console.error("Firebase init error:", error); return false; } }
     init();
 </script>
 </body>
