@@ -19,9 +19,6 @@
             justify-content: center;
             align-items: center;
             padding: 1rem;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
         }
 
         .app {
@@ -30,7 +27,7 @@
             height: 90vh;
             background: #111417;
             border-radius: 24px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -52,10 +49,8 @@
 
         .badge {
             font-size: 0.65rem;
-            letter-spacing: 1px;
             color: #6c7a89;
             text-transform: uppercase;
-            font-weight: 500;
             margin-bottom: 0.2rem;
         }
 
@@ -63,7 +58,6 @@
             font-size: 1.4rem;
             font-weight: 500;
             color: #eef2ff;
-            letter-spacing: -0.5px;
         }
 
         .logout-btn {
@@ -81,10 +75,8 @@
 
         .logout-btn:hover {
             background: #4a2a2a;
-            color: #ffcccc;
         }
 
-        /* Compact User Bar */
         .user-bar {
             background: #0b0e12;
             border-bottom: 1px solid #1a1f26;
@@ -103,10 +95,6 @@
             color: #93c5fd;
         }
 
-        .user-info span:first-child {
-            color: #6c7a89;
-        }
-
         .username-display {
             font-weight: bold;
             color: #8db5e5;
@@ -115,7 +103,6 @@
         .user-bar-buttons {
             display: flex;
             gap: 8px;
-            align-items: center;
         }
 
         .online-btn {
@@ -125,13 +112,11 @@
             padding: 4px 10px;
             font-size: 0.65rem;
             cursor: pointer;
-            transition: 0.2s;
             color: #b9d0f0;
         }
         
         .online-btn:hover {
             background: #2e405b;
-            color: white;
         }
 
         .auto-delete-select {
@@ -144,10 +129,6 @@
             color: #b9d0f0;
             font-family: monospace;
         }
-        
-        .auto-delete-select:hover {
-            background: #2e405b;
-        }
 
         .room-controls {
             padding: 0.5rem 1.2rem;
@@ -155,16 +136,11 @@
             border-bottom: 1px solid #1a1f26;
         }
 
-        .room-input-group {
-            width: 100%;
-        }
-
         .room-label {
             font-size: 0.6rem;
             color: #7e8c9e;
             text-transform: uppercase;
             margin-bottom: 3px;
-            letter-spacing: 0.5px;
         }
 
         .room-field {
@@ -173,11 +149,9 @@
             border: 1px solid #252b33;
             border-radius: 40px;
             overflow: hidden;
-            transition: 0.2s;
         }
         .room-field:focus-within {
             border-color: #3e6b9e;
-            box-shadow: 0 0 0 1px #1e3a5f;
         }
 
         .room-field input {
@@ -198,14 +172,11 @@
             padding: 0 14px;
             color: #b9d0f0;
             font-weight: bold;
-            font-family: monospace;
             cursor: pointer;
-            transition: 0.2s;
             font-size: 0.7rem;
         }
         .room-field button:hover {
             background: #2d3e5a;
-            color: white;
         }
 
         .messages-container {
@@ -216,7 +187,6 @@
             flex-direction: column;
             gap: 8px;
             background: #0f1219;
-            scroll-behavior: smooth;
         }
 
         .message {
@@ -313,115 +283,7 @@
             color: white;
         }
 
-        .info-popup {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #1a1f2e;
-            border: 1px solid #3e6b9e;
-            border-radius: 16px;
-            padding: 16px;
-            z-index: 10001;
-            max-width: 280px;
-            width: 80%;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        
-        .info-popup h3 {
-            color: #eef2ff;
-            margin-bottom: 12px;
-            font-size: 1rem;
-        }
-        
-        .info-popup .seen-list {
-            max-height: 180px;
-            overflow-y: auto;
-        }
-        
-        .info-popup .seen-item {
-            padding: 6px;
-            border-bottom: 1px solid #2a2f36;
-            color: #b9d0f0;
-            font-size: 0.75rem;
-        }
-        
-        .info-popup .close-popup {
-            margin-top: 12px;
-            background: #2e405b;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 16px;
-            color: white;
-            cursor: pointer;
-            width: 100%;
-            font-size: 0.7rem;
-        }
-
-        .online-popup {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #1a1f2e;
-            border: 1px solid #3e6b9e;
-            border-radius: 16px;
-            padding: 16px;
-            z-index: 10001;
-            max-width: 280px;
-            width: 80%;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        
-        .online-popup h3 {
-            color: #eef2ff;
-            margin-bottom: 12px;
-            font-size: 1rem;
-        }
-        
-        .online-list {
-            max-height: 250px;
-            overflow-y: auto;
-        }
-        
-        .online-item {
-            padding: 8px;
-            border-bottom: 1px solid #2a2f36;
-            color: #8db5e5;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .online-item .status-dot {
-            width: 8px;
-            height: 8px;
-            background: #10b981;
-            border-radius: 50%;
-            display: inline-block;
-            animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 0.5; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.2); }
-            100% { opacity: 0.5; transform: scale(1); }
-        }
-        
-        .online-popup .close-popup {
-            margin-top: 12px;
-            background: #2e405b;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 16px;
-            color: white;
-            cursor: pointer;
-            width: 100%;
-            font-size: 0.7rem;
-        }
-
-        /* Beautiful System Message Styling */
+        /* System Message Style - Simple and Clean */
         .system-message {
             align-items: center !important;
         }
@@ -431,33 +293,18 @@
         }
         
         .system-message .message-bubble {
-            background: linear-gradient(135deg, #2a2f3a 0%, #1e2329 100%);
-            border: 1px solid #3e6b9e;
-            color: #b9d0f0;
-            font-style: normal;
+            background: #2a2f3a;
+            border: 1px solid #4a5b72;
+            color: #a0b4d0;
+            font-style: italic;
             font-size: 0.7rem;
             text-align: center;
             border-radius: 20px;
             padding: 4px 16px;
             max-width: 80%;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-        
-        .system-message .message-bubble::after {
-            content: "🐔";
-            position: absolute;
-            left: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 10px;
-            opacity: 0.6;
         }
         
         .system-message .message-header {
-            display: none;
-        }
-        
-        .system-message .message-sender {
             display: none;
         }
 
@@ -489,7 +336,6 @@
             border: 1px solid #252b33;
             border-radius: 28px;
             padding: 5px 14px;
-            transition: 0.2s;
         }
         .message-input-wrapper:focus-within {
             border-color: #3e6b9e;
@@ -515,13 +361,11 @@
             color: #c0dcff;
             font-weight: bold;
             cursor: pointer;
-            transition: 0.2s;
             font-size: 0.75rem;
             border: 1px solid #2f3a48;
         }
         #sendBtn:hover {
             background: #2e405b;
-            color: white;
         }
 
         @keyframes fadeSlide {
@@ -547,40 +391,11 @@
         }
 
         @media (max-width: 550px) {
-            .app {
-                height: 95vh;
-                border-radius: 20px;
-            }
             .message-bubble {
                 max-width: 95%;
             }
-            .logout-btn {
-                padding: 5px 10px;
-                font-size: 0.7rem;
-            }
-            h1 {
-                font-size: 1.2rem;
-            }
-            .user-bar {
-                padding: 5px 1rem;
-            }
-            .room-controls {
-                padding: 0.4rem 1rem;
-            }
             .user-bar-buttons {
                 gap: 5px;
-            }
-            .online-btn, .auto-delete-select {
-                padding: 3px 8px;
-                font-size: 0.6rem;
-            }
-            .system-message .message-bubble {
-                font-size: 0.6rem;
-                padding: 3px 12px 3px 28px;
-            }
-            .system-message .message-bubble::after {
-                font-size: 8px;
-                left: 6px;
             }
         }
 
@@ -591,148 +406,62 @@
             font-size: 0.8rem;
         }
 
-        /* Modal Styles */
-        .modal {
+        .info-popup, .online-popup {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.95);
-            z-index: 10000;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1a1f2e;
+            border: 1px solid #3e6b9e;
+            border-radius: 16px;
+            padding: 16px;
+            z-index: 10001;
+            max-width: 280px;
+            width: 80%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        .info-popup h3, .online-popup h3 {
+            color: #eef2ff;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+        
+        .seen-list, .online-list {
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        
+        .seen-item, .online-item {
+            padding: 6px;
+            border-bottom: 1px solid #2a2f36;
+            color: #b9d0f0;
+            font-size: 0.75rem;
             display: flex;
             align-items: center;
-            justify-content: center;
-            animation: fadeIn 0.3s;
-            overflow-y: auto;
+            gap: 8px;
         }
         
-        .modal-content {
-            background: #111417;
-            border-radius: 24px;
-            padding: 24px;
-            max-width: 400px;
-            width: 90%;
-            border: 1px solid #2a2f36;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-            max-height: 90vh;
-            overflow-y: auto;
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            display: inline-block;
         }
         
-        .modal-content h2 {
-            color: #eef2ff;
-            margin-bottom: 8px;
-            font-size: 1.3rem;
-        }
-        
-        .modal-content p {
-            color: #6c86a3;
-            margin-bottom: 16px;
-            font-size: 0.8rem;
-        }
-        
-        .auth-input {
-            width: 100%;
-            background: #050709;
-            border: 1px solid #252b33;
-            border-radius: 40px;
-            padding: 10px 16px;
-            color: #dfe6f0;
-            font-family: monospace;
-            font-size: 0.9rem;
-            margin-bottom: 12px;
-            outline: none;
-        }
-        
-        .auth-input:focus {
-            border-color: #3e6b9e;
-        }
-        
-        .auth-error {
-            color: #ff8888;
-            font-size: 0.7rem;
-            margin-bottom: 12px;
-            display: none;
-        }
-        
-        .auth-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-        
-        .auth-btn {
-            flex: 1;
-            padding: 8px;
-            border-radius: 40px;
-            border: none;
-            font-family: monospace;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-            font-size: 0.8rem;
-        }
-        
-        .auth-btn-primary {
-            background: #1e293b;
-            color: #b9d0f0;
-            border: 1px solid #2f3a48;
-        }
-        
-        .auth-btn-primary:hover {
+        .close-popup {
+            margin-top: 12px;
             background: #2e405b;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 16px;
             color: white;
-        }
-        
-        .auth-btn-secondary {
-            background: #2d1f1f;
-            color: #ffaaaa;
-            border: 1px solid #8b3a3a;
-        }
-        
-        .auth-switch {
-            text-align: center;
-            font-size: 0.75rem;
-            color: #6c86a3;
             cursor: pointer;
-            margin-top: 8px;
+            width: 100%;
+            font-size: 0.7rem;
         }
-        
-        .auth-switch span {
-            color: #93c5fd;
-            text-decoration: underline;
-        }
-        
-        .forgot-password {
-            text-align: center;
-            font-size: 0.65rem;
-            color: #6c86a3;
-            cursor: pointer;
-            margin-top: 8px;
-        }
-        
-        .forgot-password span {
-            color: #fbbf24;
-            text-decoration: underline;
-        }
-        
-        .security-note {
-            background: #1a1f2a;
-            border-left: 3px solid #fbbf24;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            font-size: 0.65rem;
-            color: #fbbf24;
-        }
-        
-        .answer-error {
-            font-size: 0.6rem;
-            margin-top: -8px;
-            margin-bottom: 8px;
-            display: none;
-        }
-        
+
         .screenshot-detected {
             filter: blur(10px);
             transition: filter 0.3s;
@@ -755,7 +484,6 @@
         <button id="logoutBtn" class="logout-btn">🚪 Logout</button>
     </div>
 
-    <!-- Compact User Bar -->
     <div class="user-bar">
         <div class="user-info">
             <span>👤</span>
@@ -798,7 +526,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, query, limitToLast, serverTimestamp, get, set, update, onValue, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, query, limitToLast, serverTimestamp, get, set, onValue, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
     
     const firebaseConfig = {
         apiKey: "AIzaSyDb0fuG5RUoTtNUuJ10n_A4NCC2GFDaOps",
@@ -836,18 +564,16 @@
     
     async function updateOnlineStatus() {
         if (!currentRoom || !currentUsername || !database) return;
-        
         const userOnlineRef = ref(database, `rooms/${currentRoom}/online/${currentUsername}`);
         await set(userOnlineRef, {
             username: currentUsername,
             lastSeen: serverTimestamp(),
             lastSeenMs: Date.now()
         });
-        
         onDisconnect(userOnlineRef).remove();
     }
     
-    async function showOnlineUsers() {
+    window.showOnlineUsers = async function() {
         if (!currentRoom) {
             alert("Join a room first!");
             return;
@@ -891,9 +617,9 @@
         popup.addEventListener('click', (e) => {
             if (e.target === popup) popup.remove();
         });
-    }
+    };
     
-    // ========== MESSAGE STATUS FUNCTIONS ==========
+    // ========== MESSAGE STATUS ==========
     
     async function markMessageDelivered(messageId) {
         if (!currentRoom || !currentUsername) return;
@@ -921,30 +647,15 @@
         }
         
         if (othersSeenCount > 0) {
-            return { 
-                status: 'seen', 
-                icon: '✓✓', 
-                text: `Seen by ${othersSeenCount} other(s)`, 
-                color: '#ff99cc' 
-            };
+            return { icon: '✓✓', text: `Seen by ${othersSeenCount} other(s)`, color: '#ff99cc' };
         } 
         else if (othersDeliveredCount > 0) {
-            return { 
-                status: 'delivered', 
-                icon: '✓', 
-                text: `Delivered to ${othersDeliveredCount} other(s)`, 
-                color: '#888' 
-            };
+            return { icon: '✓', text: `Delivered to ${othersDeliveredCount} other(s)`, color: '#888' };
         }
-        return { 
-            status: 'sent', 
-            icon: '○', 
-            text: 'Sent', 
-            color: '#888' 
-        };
+        return { icon: '○', text: 'Sent', color: '#888' };
     }
     
-    function showInfoPopup(message) {
+    window.showInfoPopup = function(message) {
         const popup = document.createElement('div');
         popup.className = 'info-popup';
         
@@ -977,9 +688,9 @@
         popup.addEventListener('click', (e) => {
             if (e.target === popup) popup.remove();
         });
-    }
+    };
     
-    // ========== AUTO-DELETE FUNCTIONS ==========
+    // ========== AUTO-DELETE ==========
     
     function getDeleteTimeMs(mode) {
         switch(mode) {
@@ -1004,12 +715,12 @@
         if (autoDeleteMode !== 'off') {
             const timeMs = getDeleteTimeMs(autoDeleteMode);
             if (timeMs === 0) {
-                // Immediate delete - clear all messages now
-                await clearAllMessages();
-                addSystemMessage(`⚡ Auto-delete: All messages cleared immediately!`);
+                const messagesRef = ref(database, `rooms/${currentRoom}/messages`);
+                await set(messagesRef, null);
+                addSystemMessage(`⚡ All messages cleared!`);
             } else {
                 const hours = autoDeleteMode === '1hour' ? '1 hour' : '24 hours';
-                addSystemMessage(`🕐 Auto-delete enabled! Messages older than ${hours} will be cleared.`);
+                addSystemMessage(`🕐 Auto-delete enabled: messages older than ${hours} will be cleared.`);
             }
             startAutoDelete();
         } else {
@@ -1022,16 +733,8 @@
         }
     }
     
-    async function clearAllMessages() {
-        if (!currentRoom || !database) return;
-        const messagesRef = ref(database, `rooms/${currentRoom}/messages`);
-        await set(messagesRef, null);
-        addSystemMessage(`🧹 All messages have been cleared!`);
-    }
-    
     async function startAutoDelete() {
         stopAutoDelete();
-        
         if (autoDeleteMode === 'off') return;
         
         const deleteTimeMs = getDeleteTimeMs(autoDeleteMode);
@@ -1059,7 +762,7 @@
                     }
                 }
             }
-        }, 30 * 1000); // Check every 30 seconds
+        }, 30 * 1000);
     }
     
     function stopAutoDelete() {
@@ -1077,9 +780,7 @@
             autoDeleteMode = snapshot.val();
             const select = document.getElementById('autoDeleteSelect');
             select.value = autoDeleteMode;
-            if (autoDeleteMode !== 'off') {
-                startAutoDelete();
-            }
+            if (autoDeleteMode !== 'off') startAutoDelete();
         }
     }
     
@@ -1190,7 +891,7 @@
         return null;
     }
     
-    async function logout() {
+    window.logout = async function() {
         if (currentUsername) {
             await removeActiveSession(currentUsername);
             if (currentRoom && database) {
@@ -1203,7 +904,7 @@
             stopAutoDelete();
             location.reload();
         }
-    }
+    };
     
     // ========== CHAT FUNCTIONS ==========
     async function initFirebase() {
@@ -1227,7 +928,6 @@
         stopAutoDelete();
         if (messagesRef) messagesRef = null;
         
-        // Remove old online status
         if (currentRoom && currentUsername) {
             const oldOnlineRef = ref(database, `rooms/${currentRoom}/online/${currentUsername}`);
             set(oldOnlineRef, null);
@@ -1246,7 +946,6 @@
             if (message) {
                 const messageId = snapshot.key;
                 displayMessage(message, messageId);
-                
                 if (message.sender !== currentUsername && !message.isSystem) {
                     await markMessageSeen(messageId, message.sender);
                 }
@@ -1257,29 +956,28 @@
             const messages = snapshot.val();
             if (messages) {
                 for (const [msgId, msg] of Object.entries(messages)) {
-                    updateMessageStatus(msgId, msg);
+                    const msgElement = document.getElementById(`msg-${msgId}`);
+                    if (msgElement && !msg.isSystem) {
+                        const statusSpan = msgElement.querySelector('.message-status');
+                        if (statusSpan) {
+                            const status = getMessageStatus(msg);
+                            statusSpan.innerHTML = `<span style="color: ${status.color}"> ${status.icon}</span>`;
+                            statusSpan.title = status.text;
+                        }
+                    }
                 }
             }
         });
         
-        // Update online status
         updateOnlineStatus();
-        
         setTimeout(() => addSystemMessage(`${currentUsername} joined the room`), 300);
         loadAutoDeleteSetting();
+        
+        // Enable message input
+        document.getElementById("messageInput").disabled = false;
+        document.getElementById("sendBtn").disabled = false;
+        
         return true;
-    }
-    
-    function updateMessageStatus(messageId, message) {
-        const msgElement = document.getElementById(`msg-${messageId}`);
-        if (msgElement && !message.isSystem) {
-            const statusSpan = msgElement.querySelector('.message-status');
-            if (statusSpan) {
-                const status = getMessageStatus(message);
-                statusSpan.innerHTML = `<span style="color: ${status.color}"> ${status.icon}</span>`;
-                statusSpan.title = status.text;
-            }
-        }
     }
     
     async function sendMessage(text) {
@@ -1333,7 +1031,7 @@
         msgDiv.className = "message";
         
         const isOwn = (message.sender === currentUsername);
-        const isSystem = message.isSystem === true || message.sender === "🐔 system";
+        const isSystem = message.isSystem === true;
         
         if (!isSystem) msgDiv.classList.add(isOwn ? 'own-message' : '');
         if (isSystem) msgDiv.classList.add("system-message");
@@ -1347,8 +1045,6 @@
         const status = getMessageStatus(message);
         const statusIcon = (isOwn && !isSystem) ? `<span style="color: ${status.color}"> ${status.icon}</span>` : '';
         
-        const senderDisplay = isSystem ? "" : escapeHtml(message.sender);
-        
         if (isSystem) {
             msgDiv.innerHTML = `
                 <div class="message-content">
@@ -1358,34 +1054,27 @@
         } else {
             msgDiv.innerHTML = `
                 <div class="message-header">
-                    <span class="message-sender">${senderDisplay}</span>
+                    <span class="message-sender">${escapeHtml(message.sender)}</span>
                     <span class="message-time">${timeStr}</span>
                     <span class="message-status" title="${status.text}">${statusIcon}</span>
                 </div>
                 <div class="message-content">
-                    <div class="message-bubble">${escapeHtml(message.text || '')}</div>
+                    <div class="message-bubble">${escapeHtml(message.text)}</div>
                 </div>
                 <div class="message-actions">
-                    <button class="action-btn info-btn" data-message-id="${messageId}">ℹ️ Info</button>
+                    <button class="action-btn info-btn">ℹ️ Info</button>
                 </div>
             `;
-        }
-        
-        container.appendChild(msgDiv);
-        
-        if (!isSystem) {
+            
             const infoBtn = msgDiv.querySelector('.info-btn');
             if (infoBtn) {
-                infoBtn.addEventListener('click', async () => {
-                    const msgRef = ref(database, `rooms/${currentRoom}/messages/${messageId}`);
-                    const snapshot = await get(msgRef);
-                    if (snapshot.exists()) {
-                        showInfoPopup(snapshot.val());
-                    }
+                infoBtn.addEventListener('click', () => {
+                    window.showInfoPopup(message);
                 });
             }
         }
         
+        container.appendChild(msgDiv);
         container.scrollTop = container.scrollHeight;
     }
     
@@ -1398,23 +1087,24 @@
         const onlinePeopleBtn = document.getElementById("onlinePeopleBtn");
         const autoDeleteSelect = document.getElementById("autoDeleteSelect");
         
-        joinBtn.addEventListener("click", () => {
+        joinBtn.onclick = () => {
             let roomVal = roomInput.value.trim();
             if (!roomVal) roomVal = "lobby";
             joinRoom(roomVal);
-        });
+        };
         
-        sendBtn.addEventListener("click", () => sendMessage(messageInput.value));
-        messageInput.addEventListener("keydown", (e) => {
+        sendBtn.onclick = () => sendMessage(messageInput.value);
+        
+        messageInput.onkeydown = (e) => {
             if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage(messageInput.value);
             }
-        });
+        };
         
-        logoutBtn.addEventListener("click", logout);
-        onlinePeopleBtn.addEventListener("click", showOnlineUsers);
-        autoDeleteSelect.addEventListener("change", changeAutoDeleteMode);
+        logoutBtn.onclick = () => window.logout();
+        onlinePeopleBtn.onclick = () => window.showOnlineUsers();
+        autoDeleteSelect.onchange = () => changeAutoDeleteMode();
         
         roomInput.value = "lobby";
         setTimeout(() => { if (isFirebaseReady && !currentRoom && currentUsername) joinRoom("lobby"); }, 800);
