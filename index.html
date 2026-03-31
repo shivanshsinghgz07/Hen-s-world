@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hen's World — Advanced Chat</title>
+    <title>Hen's World — Chat</title>
     <style>
         * {
             margin: 0;
@@ -56,7 +56,7 @@
             color: #6c7a89;
             text-transform: uppercase;
             font-weight: 500;
-            margin-bottom: 0.3rem;
+            margin-bottom: 0.2rem;
         }
 
         h1 {
@@ -64,12 +64,6 @@
             font-weight: 500;
             color: #eef2ff;
             letter-spacing: -0.5px;
-        }
-
-        .sub {
-            color: #6c86a3;
-            font-size: 0.7rem;
-            margin-top: 3px;
         }
 
         .logout-btn {
@@ -98,13 +92,13 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
+            gap: 10px;
         }
 
         .user-info {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             font-size: 0.75rem;
             color: #93c5fd;
         }
@@ -116,6 +110,27 @@
         .username-display {
             font-weight: bold;
             color: #8db5e5;
+        }
+
+        .user-bar-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .online-btn {
+            background: #1e293b;
+            border: 1px solid #2f3a48;
+            border-radius: 40px;
+            padding: 4px 10px;
+            font-size: 0.65rem;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #b9d0f0;
+        }
+        
+        .online-btn:hover {
+            background: #2e405b;
+            color: white;
         }
 
         .auto-delete-toggle {
@@ -142,7 +157,7 @@
         }
 
         .room-controls {
-            padding: 0.8rem 1.2rem;
+            padding: 0.5rem 1.2rem;
             background: #0b0e12;
             border-bottom: 1px solid #1a1f26;
         }
@@ -152,10 +167,10 @@
         }
 
         .room-label {
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             color: #7e8c9e;
             text-transform: uppercase;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
             letter-spacing: 0.5px;
         }
 
@@ -176,10 +191,10 @@
             flex: 1;
             background: transparent;
             border: none;
-            padding: 8px 16px;
+            padding: 6px 14px;
             color: #dfe6f0;
             font-family: monospace;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             outline: none;
         }
 
@@ -187,13 +202,13 @@
             background: #1e293b;
             border: none;
             border-left: 1px solid #2d3540;
-            padding: 0 18px;
+            padding: 0 14px;
             color: #b9d0f0;
             font-weight: bold;
             font-family: monospace;
             cursor: pointer;
             transition: 0.2s;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
         }
         .room-field button:hover {
             background: #2d3e5a;
@@ -206,7 +221,7 @@
             padding: 1rem 1.2rem;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             background: #0f1219;
             scroll-behavior: smooth;
         }
@@ -350,6 +365,62 @@
             font-size: 0.7rem;
         }
 
+        .online-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1a1f2e;
+            border: 1px solid #3e6b9e;
+            border-radius: 16px;
+            padding: 16px;
+            z-index: 10001;
+            max-width: 280px;
+            width: 80%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        .online-popup h3 {
+            color: #eef2ff;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+        
+        .online-list {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        
+        .online-item {
+            padding: 8px;
+            border-bottom: 1px solid #2a2f36;
+            color: #8db5e5;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .online-item .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .online-popup .close-popup {
+            margin-top: 12px;
+            background: #2e405b;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 16px;
+            color: white;
+            cursor: pointer;
+            width: 100%;
+            font-size: 0.7rem;
+        }
+
         .message-bubble::after {
             content: "🔒";
             position: absolute;
@@ -454,7 +525,14 @@
                 padding: 5px 1rem;
             }
             .room-controls {
-                padding: 0.6rem 1rem;
+                padding: 0.4rem 1rem;
+            }
+            .user-bar-buttons {
+                gap: 5px;
+            }
+            .online-btn, .auto-delete-toggle {
+                padding: 3px 8px;
+                font-size: 0.6rem;
             }
         }
 
@@ -635,34 +713,36 @@
 <div class="app">
     <div class="header">
         <div class="header-left">
-            <div class="badge">🐔 advanced messenger · hen's world</div>
+            <div class="badge">🐔 hen's world</div>
             <h1>Hen's World Chat</h1>
-            <div class="sub">message tracking · auto-delete · secure</div>
         </div>
         <button id="logoutBtn" class="logout-btn">🚪 Logout</button>
     </div>
 
-    <!-- Compact User Bar - Shows Username and Auto-Delete Toggle -->
+    <!-- Compact User Bar -->
     <div class="user-bar">
         <div class="user-info">
             <span>👤</span>
             <span id="usernameDisplay" class="username-display">—</span>
         </div>
-        <button id="autoDeleteToggle" class="auto-delete-toggle off">⏰ Auto-Delete: OFF</button>
+        <div class="user-bar-buttons">
+            <button id="onlinePeopleBtn" class="online-btn">👥 Online</button>
+            <button id="autoDeleteToggle" class="auto-delete-toggle off">⏰ Auto: OFF</button>
+        </div>
     </div>
 
     <div class="room-controls">
         <div class="room-input-group">
-            <div class="room-label">🔗 room identifier</div>
+            <div class="room-label">🔗 room</div>
             <div class="room-field">
-                <input type="text" id="roomInput" placeholder="e.g., coop-chat, hens-den" autocomplete="off">
+                <input type="text" id="roomInput" placeholder="room name" autocomplete="off">
                 <button id="joinRoomBtn">join</button>
             </div>
         </div>
     </div>
 
     <div class="messages-container" id="messagesContainer">
-        <div class="loading">✨ Welcome to Hen's World! Join a room to start chatting...</div>
+        <div class="loading">✨ Welcome! Join a room to start chatting...</div>
     </div>
 
     <div class="input-area">
@@ -677,7 +757,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, query, limitToLast, serverTimestamp, get, set, update, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, query, limitToLast, serverTimestamp, get, set, update, onValue, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
     
     const firebaseConfig = {
         apiKey: "AIzaSyDb0fuG5RUoTtNUuJ10n_A4NCC2GFDaOps",
@@ -695,18 +775,7 @@
     let isFirebaseReady = false;
     let autoDeleteEnabled = false;
     let autoDeleteInterval = null;
-    
-    // Security Questions
-    const securityQuestions = [
-        "What is your mother's maiden name?",
-        "What was the name of your first pet?",
-        "What was your childhood nickname?",
-        "What is your favorite teacher's name?",
-        "What is your best friend's first name?",
-        "What was the name of your first school?",
-        "What is your father's middle name?",
-        "What city were you born in?"
-    ];
+    let onlineUsersRef = null;
     
     function simpleHash(str) {
         let hash = 0;
@@ -721,6 +790,67 @@
     function cleanAnswer(answer) {
         if (!answer) return "";
         return answer.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/\s/g, '');
+    }
+    
+    // ========== ONLINE USERS ==========
+    
+    async function updateOnlineStatus() {
+        if (!currentRoom || !currentUsername || !database) return;
+        
+        const userOnlineRef = ref(database, `rooms/${currentRoom}/online/${currentUsername}`);
+        await set(userOnlineRef, {
+            username: currentUsername,
+            lastSeen: serverTimestamp(),
+            lastSeenMs: Date.now()
+        });
+        
+        onDisconnect(userOnlineRef).remove();
+    }
+    
+    async function showOnlineUsers() {
+        if (!currentRoom) {
+            alert("Join a room first!");
+            return;
+        }
+        
+        const onlineRef = ref(database, `rooms/${currentRoom}/online`);
+        const snapshot = await get(onlineRef);
+        
+        const popup = document.createElement('div');
+        popup.className = 'online-popup';
+        
+        let onlineHtml = '<h3>👥 Online Users</h3>';
+        
+        if (snapshot.exists()) {
+            const users = snapshot.val();
+            const userList = Object.keys(users);
+            
+            if (userList.length === 0) {
+                onlineHtml += '<p style="color:#888">No one else is online</p>';
+            } else {
+                onlineHtml += '<div class="online-list">';
+                for (const user of userList) {
+                    onlineHtml += `
+                        <div class="online-item">
+                            <span class="status-dot"></span>
+                            🐔 ${escapeHtml(user)}
+                        </div>
+                    `;
+                }
+                onlineHtml += '</div>';
+                onlineHtml += `<p style="color:#6c86a3; font-size:0.7rem; margin-top:10px">${userList.length} user(s) online</p>`;
+            }
+        } else {
+            onlineHtml += '<p style="color:#888">No one else is online</p>';
+        }
+        
+        popup.innerHTML = onlineHtml + `<button class="close-popup">Close</button>`;
+        document.body.appendChild(popup);
+        
+        popup.querySelector('.close-popup').addEventListener('click', () => popup.remove());
+        popup.addEventListener('click', (e) => {
+            if (e.target === popup) popup.remove();
+        });
     }
     
     // ========== MESSAGE STATUS FUNCTIONS ==========
@@ -822,12 +952,12 @@
         
         if (autoDeleteEnabled) {
             toggleBtn.className = 'auto-delete-toggle on';
-            toggleBtn.innerHTML = '⏰ Auto-Delete: ON (1hr)';
+            toggleBtn.innerHTML = '⏰ Auto: ON';
             startAutoDelete();
-            addSystemMessage(`🕐 Auto-delete enabled! Messages will be cleared every hour.`);
+            addSystemMessage(`🕐 Auto-delete enabled!`);
         } else {
             toggleBtn.className = 'auto-delete-toggle off';
-            toggleBtn.innerHTML = '⏰ Auto-Delete: OFF';
+            toggleBtn.innerHTML = '⏰ Auto: OFF';
             stopAutoDelete();
             addSystemMessage(`🕐 Auto-delete disabled.`);
         }
@@ -880,11 +1010,11 @@
             const toggleBtn = document.getElementById('autoDeleteToggle');
             if (autoDeleteEnabled) {
                 toggleBtn.className = 'auto-delete-toggle on';
-                toggleBtn.innerHTML = '⏰ Auto-Delete: ON (1hr)';
+                toggleBtn.innerHTML = '⏰ Auto: ON';
                 startAutoDelete();
             } else {
                 toggleBtn.className = 'auto-delete-toggle off';
-                toggleBtn.innerHTML = '⏰ Auto-Delete: OFF';
+                toggleBtn.innerHTML = '⏰ Auto: OFF';
             }
         }
     }
@@ -999,6 +1129,10 @@
     async function logout() {
         if (currentUsername) {
             await removeActiveSession(currentUsername);
+            if (currentRoom && database) {
+                const userOnlineRef = ref(database, `rooms/${currentRoom}/online/${currentUsername}`);
+                await set(userOnlineRef, null);
+            }
             localStorage.removeItem("hensworld_username");
             currentUsername = null;
             currentRoom = null;
@@ -1029,6 +1163,12 @@
         stopAutoDelete();
         if (messagesRef) messagesRef = null;
         
+        // Remove old online status
+        if (currentRoom && currentUsername) {
+            const oldOnlineRef = ref(database, `rooms/${currentRoom}/online/${currentUsername}`);
+            set(oldOnlineRef, null);
+        }
+        
         currentRoom = cleanRoomId;
         
         const container = document.getElementById("messagesContainer");
@@ -1058,7 +1198,10 @@
             }
         });
         
-        setTimeout(() => addSystemMessage(`${currentUsername} 🐔 joined the room`), 300);
+        // Update online status
+        updateOnlineStatus();
+        
+        setTimeout(() => addSystemMessage(`${currentUsername} joined the room`), 300);
         loadAutoDeleteSetting();
         return true;
     }
@@ -1100,7 +1243,7 @@
     async function addSystemMessage(text) {
         if (!currentRoom || !database) return;
         const systemMsg = {
-            sender: "🐔 Hen's World",
+            sender: "🐔 system",
             text: text,
             timestamp: serverTimestamp(),
             timestampMs: Date.now(),
@@ -1126,7 +1269,7 @@
         msgDiv.className = "message";
         
         const isOwn = (message.sender === currentUsername);
-        const isSystem = message.isSystem === true || message.sender === "🐔 Hen's World";
+        const isSystem = message.isSystem === true || message.sender === "🐔 system";
         
         if (!isSystem) msgDiv.classList.add(isOwn ? 'own-message' : '');
         if (isSystem) msgDiv.classList.add("system-message");
@@ -1179,10 +1322,11 @@
         const messageInput = document.getElementById("messageInput");
         const logoutBtn = document.getElementById("logoutBtn");
         const autoDeleteToggle = document.getElementById("autoDeleteToggle");
+        const onlinePeopleBtn = document.getElementById("onlinePeopleBtn");
         
         joinBtn.addEventListener("click", () => {
             let roomVal = roomInput.value.trim();
-            if (!roomVal) roomVal = "henhouse-lounge";
+            if (!roomVal) roomVal = "lobby";
             joinRoom(roomVal);
         });
         
@@ -1196,9 +1340,10 @@
         
         logoutBtn.addEventListener("click", logout);
         autoDeleteToggle.addEventListener("click", toggleAutoDelete);
+        onlinePeopleBtn.addEventListener("click", showOnlineUsers);
         
-        roomInput.value = "henhouse-lounge";
-        setTimeout(() => { if (isFirebaseReady && !currentRoom && currentUsername) joinRoom("henhouse-lounge"); }, 800);
+        roomInput.value = "lobby";
+        setTimeout(() => { if (isFirebaseReady && !currentRoom && currentUsername) joinRoom("lobby"); }, 800);
     }
     
     function addWatermark() {
